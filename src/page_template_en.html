@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Brazil voted for president: 2022 vs 2026</title>
+<meta name="description" content="Brazil's presidential vote in 2022 and 2026, state by state, and the 2026 first round vs runoff in Brazil and in Goiás, with official open data from the TSE.">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --pl: #2a78d6; --pt: #e34948; --caiado: #d99a1e; --other: #c3c2b7; --flip: #fbf3df;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--page); color: var(--ink); margin: 0; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.9rem; margin: 0 0 8px; line-height: 1.2; }
+  h2 { font-size: 1.5rem; margin: 0; }
+  h3 { font-size: 1.15rem; margin: 0 0 4px; }
+  p { color: var(--ink-2); line-height: 1.5; margin: 6px 0; }
+  .lead { font-size: 1.15rem; color: var(--ink); }
+  .lang { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: 0 0 12px; color: var(--muted); }
+  .lang a { text-decoration: none; padding: 4px 2px; }
+  .lang a[aria-current="page"] { color: var(--ink); font-weight: 700; }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin: 20px 0; padding: 20px; }
+  .part { margin: 44px 0 0; padding: 0 4px; border: 0; background: none; }
+  .part .num { color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.85rem; }
+  nav ol { margin: 8px 0 0; padding-left: 20px; line-height: 1.7; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  select, input[type="search"] { width: 100%; font: inherit; font-size: 1.1rem; padding: 12px 14px; border: 2px solid var(--pl); border-radius: 8px; background: #fff; color: var(--ink); }
+  dl { margin: 10px 0 0; }
+  dt { font-weight: 600; margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  dd { margin: 2px 0 0 20px; color: var(--ink-2); line-height: 1.45; }
+  .sub { color: var(--muted); margin: 2px 0 18px; }
+  .cand { margin: 16px 0; }
+  .cand-name { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+  .row { display: grid; grid-template-columns: 84px 1fr 44px; align-items: center; gap: 8px; margin-top: 6px; color: var(--ink-2); }
+  .track { background: #efeee9; border-radius: 4px; height: 18px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 0 4px 4px 0; }
+  .before .bar { opacity: 0.45; }
+  .value { font-weight: 700; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+  ul { margin: 18px 0 0; padding-left: 20px; color: var(--ink); line-height: 1.6; }
+  .map { padding: 16px 8px 8px; }
+  .map h3, .map p, .map .toggle, .map .legend { padding: 0 12px; }
+  .map-box { height: clamp(340px, 95vw, 600px); }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .toggle button { font: inherit; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-2); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--ink-2); margin-top: 6px; min-height: 22px; align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .outline { width: 12px; height: 12px; border: 2px solid var(--ink); border-radius: 3px; display: inline-block; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child, th:nth-child(2), td.left { text-align: left; }
+  th { color: var(--ink-2); font-weight: 600; font-size: 0.9rem; }
+  tbody tr.pick { cursor: pointer; }
+  tbody tr.pick:hover { background: #f1f0eb; }
+  tbody tr.apart td { border-top: 2px solid var(--ink-2); font-style: italic; }
+  tbody tr.flip { background: var(--flip); }
+  button.link { font: inherit; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+  footer { color: var(--muted); font-size: 0.9rem; margin-top: 24px; }
+  a { color: var(--pl); }
+  @media (max-width: 600px) {
+    main { padding: 16px 12px 40px; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.3rem; }
+    .lead { font-size: 1.05rem; }
+    section { padding: 16px 14px; margin: 14px 0; }
+    .map { padding: 14px 4px 4px; }
+    .row { grid-template-columns: 78px 1fr 34px; gap: 6px; }
+    th, td { padding: 7px 8px; font-size: 0.92rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+<nav class="lang" aria-label="Language">
+  <a href="../" lang="pt-BR" data-keep-hash>Português</a><span aria-hidden="true">|</span><a href="./" aria-current="page">English</a>
+</nav>
+<h1>How Brazil voted for president: 2022 vs 2026</h1>
+<p class="lead" id="headline"></p>
+
+<section>
+  <h3>Three comparisons on this page</h3>
+  <nav><ol>
+    <li><a href="#parte-1">Brazil, runoff: 2022 vs 2026, state by state</a></li>
+    <li><a href="#parte-2">Brazil, 2026: first round vs runoff, state by state</a></li>
+    <li><a href="#parte-3">Goiás, 2026: first round vs runoff, city by city</a></li>
+  </ol></nav>
+</section>
+
+<section>
+  <h3>Who is who</h3>
+  <dl>
+    <dt><span class="dot" style="background:var(--pt)"></span>Lula (Luiz Inácio Lula da Silva)</dt>
+    <dd>Workers' Party (PT), left. President from 2003 to 2010 and again since 2023.</dd>
+    <dt><span class="dot" style="background:var(--pl)"></span>Jair Bolsonaro</dt>
+    <dd>Liberal Party (PL), right. President from 2019 to 2022; lost the 2022 runoff to Lula.</dd>
+    <dt><span class="dot" style="background:var(--pl)"></span>Flávio Bolsonaro</dt>
+    <dd>Liberal Party (PL), right. Senator for Rio de Janeiro and Jair Bolsonaro's eldest son; the PL candidate in 2026.</dd>
+    <dt><span class="dot" style="background:var(--caiado)"></span>Ronaldo Caiado</dt>
+    <dd>Social Democratic Party (PSD). Former governor of Goiás; a presidential candidate in the 2026 first round.</dd>
+  </dl>
+  <p id="context"></p>
+</section>
+
+<!-- ============================== Part 1 ============================== -->
+<section class="part" id="parte-1">
+  <p class="num">Part 1</p>
+  <h2>Runoff: 2022 vs 2026, state by state</h2>
+  <p>Lula against Jair Bolsonaro in 2022 and against Flávio Bolsonaro in 2026.</p>
+</section>
+
+<section>
+  <label for="pick">Pick a state</label>
+  <select id="pick"></select>
+</section>
+
+<section id="card" aria-live="polite"></section>
+
+<section class="map">
+  <h3>Brazil, state by state</h3>
+  <p>Tap a state to see its numbers and its map city by city.</p>
+  <div class="toggle" role="group" aria-label="What the map shows" data-group="c">
+    <button type="button" data-metric="change" aria-pressed="true">Change in Lula's share</button>
+    <button type="button" data-metric="leader" aria-pressed="false">Who won in 2026</button>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="map-box" id="map-br"></div>
+</section>
+
+<section class="map" id="drill">
+  <h3 id="drill-title"></h3>
+  <p id="drill-note"></p>
+  <div class="map-box" id="map-uf"></div>
+</section>
+
+<section>
+  <h3>All states, by the change in Lula's share</h3>
+  <p>Valid votes, in %. Click a row to open the state.</p>
+  <div class="scroll"><table id="ranking"></table></div>
+</section>
+
+<section>
+  <h3>Votes abroad</h3>
+  <p id="abroad-text"></p>
+  <p><button type="button" class="link" id="abroad-open">See the numbers abroad</button></p>
+</section>
+
+<section>
+  <h3>By region</h3>
+  <p>Brazil's five regions vote very differently: the Northeast is Lula's base; the South and the Central-West lean right.</p>
+  <div class="scroll"><table id="regions"></table></div>
+</section>
+
+<!-- ============================== Part 2 ============================== -->
+<section class="part" id="parte-2">
+  <p class="num">Part 2</p>
+  <h2>2026: from the first round to the runoff, state by state</h2>
+  <p id="rounds-lead"></p>
+</section>
+
+<section class="map">
+  <h3>Who came first in each state</h3>
+  <p id="rounds-flips"></p>
+  <div class="toggle" role="group" aria-label="What the map shows" data-group="b">
+    <button type="button" data-metric="lead1" aria-pressed="false">First round</button>
+    <button type="button" data-metric="lead2" aria-pressed="true">Runoff</button>
+    <button type="button" data-metric="shift" aria-pressed="false">Who grew more</button>
+  </div>
+  <div class="legend" id="legend-rounds"></div>
+  <div class="map-box" id="map-rounds"></div>
+</section>
+
+<section>
+  <h3>All states, first round vs runoff</h3>
+  <p>Valid votes, in %. Highlighted: the states that changed their preferred candidate.</p>
+  <div class="scroll"><table id="rounds-table"></table></div>
+</section>
+
+<!-- ============================== Part 3 ============================== -->
+<section class="part" id="parte-3">
+  <p class="num">Part 3</p>
+  <h2>Goiás, 2026: from the first round to the runoff, city by city</h2>
+  <p id="go-lead"></p>
+</section>
+
+<section class="map">
+  <h3>The cities of Goiás</h3>
+  <p id="go-note"></p>
+  <div class="toggle" role="group" aria-label="What the map shows" data-group="a">
+    <button type="button" data-metric="lead1" aria-pressed="false">First round</button>
+    <button type="button" data-metric="lead2" aria-pressed="true">Runoff</button>
+    <button type="button" data-metric="shift" aria-pressed="false">Who grew more</button>
+  </div>
+  <div class="legend" id="legend-go"></div>
+  <div class="map-box" id="map-go"></div>
+</section>
+
+<section>
+  <label for="go-search">Search for a city in Goiás</label>
+  <input type="search" id="go-search" list="go-names" placeholder="E.g. Goiânia" autocomplete="off">
+  <datalist id="go-names"></datalist>
+  <div id="go-card" aria-live="polite"></div>
+</section>
+
+<section>
+  <h3>Where the race changed most</h3>
+  <p>The 15 cities where the gap between Lula and Flávio moved most from the first round to the runoff. Highlighted: those that changed their preferred candidate.</p>
+  <div class="scroll"><table id="go-table"></table></div>
+</section>
+
+<footer>
+  <p>The numbers count valid votes only (blank and spoiled ballots excluded) and include Brazilians voting abroad in the
+  national total. They show where the vote shifted, not which voters changed their minds.</p>
+  <p>Source: TSE (Tribunal Superior Eleitoral, Brazil's electoral court), open data. Maps: IBGE.
+  <a href="__CODE_URL__">Code and data on GitHub</a>.</p>
+</footer>
+</main>
+
+<script>
+const DATA = __DATA__;
+const STATES_GEO = __STATES_GEO__;
+const DEFAULT_STATE = "SP";
+const ABROAD = "ZZ";
+
+const css = getComputedStyle(document.documentElement);
+const color = (v) => css.getPropertyValue(v).trim();
+const PT = color("--pt"), PL = color("--pl"), SURFACE = color("--surface"), INK = color("--ink");
+const KEY_COLOR = { PT, PL, CAIADO: color("--caiado"), OUTRO: color("--other") };
+const byUf = new Map(DATA.states.map((s) => [s.uf, s]));
+const n0 = (v) => Math.round(v).toLocaleString("en-US");
+const f1 = (v) => v.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const points = (v) => `${f1(Math.abs(v))} ${f1(Math.abs(v)) === "1.0" ? "point" : "points"}`;
+const moved = (v) => (v >= 0 ? "rose" : "fell");
+const signed = (v) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${f1(Math.abs(v))}`;
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const plNames = `${DATA.pl_name[2022].split(" ")[0]} Bolsonaro in 2022, ${DATA.pl_name[2026].split(" ")[0]} in 2026`;
+let metric = "change";
+let current = null;
+
+// the language switch keeps the open state or part
+document.querySelectorAll("a[data-keep-hash]").forEach((a) =>
+  a.addEventListener("click", () => { a.href = a.getAttribute("href").split("#")[0] + location.hash; }));
+
+function candidate(name, c, before, after, labels = [2022, 2026]) {
+  const row = (label, value, cls) => `<div class="row ${cls}"><span>${label}</span>
+      <div class="track"><div class="bar" style="width:${value}%;background:${c}"></div></div>
+      <span class="value">${n0(value)}</span></div>`;
+  return `<div class="cand"><div class="cand-name"><span class="dot" style="background:${c}"></span>${name}</div>
+          ${row(labels[0], before, "before")}${row(labels[1], after, "after")}</div>`;
+}
+
+function lead(s) {
+  const who = { PT: "Lula", PL: "Bolsonaro" };
+  if (s.lead22 === s.lead26) return `${who[s.lead22]} won in both elections`;
+  return `flipped from ${who[s.lead22]} to ${who[s.lead26]}`;
+}
+
+function showCard(s) {
+  const dLula = s.lula26 - s.lula22, dPl = s.pl26 - s.pl22, nat = DATA.national;
+  const others = s.rounds.filter((r) => r.round !== DATA.round)
+    .map((r) => `${r.year}, ${r.round}: Lula ${f1(r.lula)}, ${DATA.pl_name[r.year]} ${f1(r.pl)}`).join("; ");
+  document.getElementById("card").innerHTML = `
+    <h2>${s.name}</h2>
+    <p class="sub">${s.uf === ABROAD ? "Votes at Brazilian consulates around the world" : s.region} · ${n0(s.registered)} registered voters · ${lead(s)}</p>
+    <p><strong>Out of every 100 valid votes in the ${DATA.round}:</strong></p>
+    ${candidate("Lula (PT)", PT, s.lula22, s.lula26)}
+    ${candidate(`PL (${plNames})`, PL, s.pl22, s.pl26)}
+    <ul>
+      <li>Lula's share ${moved(dLula)} ${points(dLula)} here. Nationwide, it ${moved(nat.lula_change)} ${points(nat.lula_change)}.</li>
+      <li>The PL's share ${moved(dPl)} ${points(dPl)}. Nationwide, it ${moved(nat.pl_change)} ${points(nat.pl_change)}.</li>
+      <li>${n0(s.abst26)} of every 100 registered voters did not vote (${n0(s.abst22)} in 2022). Voting is compulsory for most adults.</li>
+      ${others ? `<li>For comparison, in % of valid votes: ${others}.</li>` : ""}
+    </ul>`;
+}
+
+const LAYOUT = (lon, lat) => ({
+  margin: { r: 0, l: 0, t: 0, b: 0 }, paper_bgcolor: SURFACE, font: { family: "Segoe UI, system-ui, sans-serif" },
+  separators: ".,", showlegend: false,
+  geo: { visible: false, bgcolor: SURFACE, projection: { type: "mercator" }, lonaxis: { range: lon },
+         lataxis: { range: lat }, domain: { x: [0, 1], y: [0.12, 1] } },
+});
+const CONFIG = { displayModeBar: false, responsive: true, scrollZoom: false };
+const BRAZIL_VIEW = [[-74.5, -34], [-34.2, 5.8]];
+
+// Municipalities created after 2022 have no earlier result: drawn in gray on the "change" map
+function newPlaces(geojson, key, rows) {
+  const fresh = rows.filter((r) => r.lula22 === null && r.lula26 !== null);
+  return {
+    type: "choropleth", geojson, featureidkey: `properties.${key}`, locations: fresh.map((r) => r.id),
+    z: fresh.map(() => 0), zmin: 0, zmax: 1, colorscale: [[0, "#c3c2b7"], [1, "#c3c2b7"]], showscale: false,
+    text: fresh.map((r) => r.name), customdata: fresh.map((r) => [r.lula26]),
+    marker: { line: { color: "white", width: 0.5 } },
+    hovertemplate: "<b>%{text}</b><br>Created after 2022: no earlier result<br>Lula in 2026: %{customdata[0]:.1f}%<extra></extra>",
+  };
+}
+
+function traces(geojson, key, rows) {
+  return metric === "leader" ? [trace(geojson, key, rows)] : [trace(geojson, key, rows), newPlaces(geojson, key, rows)];
+}
+
+function trace(geojson, key, rows) {
+  const base = {
+    type: "choropleth", geojson, featureidkey: `properties.${key}`, locations: rows.map((r) => r.id),
+    text: rows.map((r) => r.name), marker: { line: { color: "white", width: 0.5 } },
+  };
+  if (metric === "leader") {
+    return { ...base, z: rows.map((r) => (r.lula26 === null || r.pl26 === null ? null : r.pl26 > r.lula26 ? 1 : 0)),
+             zmin: 0, zmax: 1, colorscale: [[0, PT], [1, PL]], showscale: false,
+             customdata: rows.map((r) => [r.lula26, r.pl26]),
+             hovertemplate: "<b>%{text}</b><br>Lula %{customdata[0]:.1f}%<br>Bolsonaro %{customdata[1]:.1f}%<extra></extra>" };
+  }
+  return { ...diverging(rows.map((r) => (r.lula22 === null || r.lula26 === null ? null : r.lula26 - r.lula22)),
+                        "Lula's share, change in points"),
+           ...base, customdata: rows.map((r) => [r.lula22, r.lula26]),
+           hovertemplate: "<b>%{text}</b><br>Lula: %{customdata[0]:.1f}% → %{customdata[1]:.1f}%<br>Change: %{z:+.1f} points<extra></extra>" };
+}
+
+// Blue (toward Bolsonaro) to red (toward Lula), symmetric around zero
+function diverging(z, title) {
+  const span = Math.max(1, ...z.filter((v) => v !== null).map(Math.abs));
+  return { z, zmin: -span, zmax: span, colorscale: [[0, PL], [0.5, "#f0efec"], [1, PT]],
+           colorbar: { orientation: "h", y: 0, yanchor: "bottom", len: 0.7, thickness: 12, title: { text: title, side: "top" } } };
+}
+
+// One trace per leading candidate; places that changed leader get a dark outline
+function leaderTraces(geojson, key, rows, field, hover) {
+  const groups = new Map();
+  for (const r of rows) {
+    const k = r[`key${field}`];
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  return [...groups].map(([k, g]) => ({
+    type: "choropleth", geojson, featureidkey: `properties.${key}`, locations: g.map((r) => r.id),
+    z: g.map(() => 0), zmin: 0, zmax: 1, colorscale: [[0, KEY_COLOR[k]], [1, KEY_COLOR[k]]], showscale: false,
+    text: g.map((r) => r.name), customdata: g.map(hover),
+    marker: { line: { color: g.map((r) => (field === 2 && r.flipped ? INK : "white")),
+                      width: g.map((r) => (field === 2 && r.flipped ? 2 : 0.5)) } },
+    hovertemplate: "<b>%{text}</b><br>%{customdata}<extra></extra>",
+  }));
+}
+
+function leaderLegend(rows, field, flipped) {
+  const seen = new Map(rows.map((r) => [r[`key${field}`], r[`lead${field}`]]));
+  return [...seen].map(([k, name]) => `<span><i class="dot" style="background:${KEY_COLOR[k]}"></i>${name} ahead</span>`).join("")
+    + (field === 2 && flipped ? `<span><i class="outline"></i>changed leader</span>` : "");
+}
+
+const shiftLegend = `<span><i class="dot" style="background:${PT}"></i>Lula grew more</span><span><i class="dot" style="background:${PL}"></i>Flávio grew more</span>`;
+
+function drawLegend() {
+  document.getElementById("legend").innerHTML = metric === "leader"
+    ? `<span><i class="dot" style="background:${PT}"></i>Lula (PT) ahead</span><span><i class="dot" style="background:${PL}"></i>Bolsonaro (PL) ahead</span>`
+    : `<span><i class="dot" style="background:${PT}"></i>Lula gained ground</span><span><i class="dot" style="background:${PL}"></i>Lula lost ground</span>`;
+}
+
+function drawBrazil() {
+  const rows = DATA.states.filter((s) => s.uf !== ABROAD).map((s) => ({ ...s, id: s.uf }));
+  Plotly.react("map-br", [trace(STATES_GEO, "uf", rows)], LAYOUT(...BRAZIL_VIEW), CONFIG);
+}
+
+// the map files are shared with the Portuguese page, one folder up
+const geoCache = new Map();
+async function loadGeo(uf) {
+  if (!geoCache.has(uf)) geoCache.set(uf, await (await fetch(`../geo/${uf}.json`)).json());
+  return geoCache.get(uf);
+}
+const viewOf = (geo) => {
+  const [minx, miny, maxx, maxy] = geo.bounds, pad = Math.max(maxx - minx, maxy - miny) * 0.04;
+  return [[minx - pad, maxx + pad], [miny - pad, maxy + pad]];
+};
+
+async function drawState(s) {
+  const title = document.getElementById("drill-title"), note = document.getElementById("drill-note");
+  if (s.uf === ABROAD) {
+    title.textContent = "Votes abroad";
+    note.textContent = "Votes at Brazilian consulates around the world. They count in the national total but belong to no state, so there is no map.";
+    Plotly.purge("map-uf");
+    document.getElementById("map-uf").hidden = true;
+    return;
+  }
+  document.getElementById("map-uf").hidden = false;
+  title.textContent = `${s.name}, city by city`;
+  note.textContent = "Loading the map…";
+  try {
+    const geo = await loadGeo(s.uf);
+    if (current !== s) return;
+    const rows = geo.geojson.features.map((f) => ({
+      id: f.properties.id, name: f.properties.name, lula22: f.properties.lula_2022, lula26: f.properties.lula_2026,
+      pl26: f.properties.pl_2026,
+    }));
+    Plotly.react("map-uf", traces(geo.geojson, "id", rows), LAYOUT(...viewOf(geo)), CONFIG);
+    const fresh = rows.filter((r) => r.lula22 === null && r.lula26 !== null).map((r) => r.name);
+    note.textContent = `${rows.length} cities, ${DATA.round}. Hover or tap to see the numbers.` +
+      (fresh.length ? ` In gray on the change map: ${fresh.join(", ")}, created after 2022.` : "");
+  } catch (err) {
+    note.textContent = "Could not load the map for this state.";
+  }
+}
+
+function select(uf, scroll, keepHash = false) {
+  const s = byUf.get(uf);
+  if (!s) return;
+  current = s;
+  pick.value = uf;
+  showCard(s);
+  drawState(s);
+  if (!keepHash) history.replaceState(null, "", `#${uf}`);
+  if (scroll) document.getElementById("card").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function table(id, head, rows) {
+  document.getElementById(id).innerHTML =
+    `<thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody>`;
+}
+const delta = (v) => `<td><strong>${signed(v)}</strong></td>`;
+
+// ------------------------------------------------------------------ Part 1
+const pick = document.getElementById("pick");
+pick.innerHTML = DATA.states.slice().sort((a, b) => (a.uf === ABROAD) - (b.uf === ABROAD) || a.name.localeCompare(b.name, "en"))
+  .map((s) => `<option value="${s.uf}">${s.name}</option>`).join("");
+pick.addEventListener("change", () => select(pick.value, false));
+
+const nat = DATA.national, c = DATA.counts;
+document.getElementById("headline").textContent =
+  `In the ${DATA.round}, Lula got ${n0(nat.lula_2022)} of every 100 valid votes in 2022 and ${n0(nat.lula_2026)} in 2026. ` +
+  `The Bolsonaro family's party went from ${n0(nat.pl_2022)} to ${n0(nat.pl_2026)}. ` +
+  `Lula won ${c.lula_states_2022} of ${c.n_states} states in 2022 and ${c.lula_states_2026} in 2026.`;
+document.getElementById("context").textContent = "Nationwide, in % of valid votes: " +
+  DATA.context.map((r) => `${r.year}, ${r.round}: Lula ${f1(r.lula)}, ${r.pl_name} ${f1(r.pl)}`).join("; ") + ".";
+
+table("ranking", ["State", "Region", "Lula 2022", "Lula 2026", "Change", "PL 2022", "PL 2026", "Change"],
+  // the 27 states ranked; votes abroad always last, as a separate line
+  DATA.states.slice().sort((a, b) => (a.uf === ABROAD) - (b.uf === ABROAD) || (a.lula26 - a.lula22) - (b.lula26 - b.lula22)).map((s) =>
+    `<tr class="pick${s.uf === ABROAD ? " apart" : ""}" data-uf="${s.uf}"><td>${s.name}</td><td class="left">${s.uf === ABROAD ? "Not a state" : s.region}</td><td>${f1(s.lula22)}</td>
+     <td>${f1(s.lula26)}</td>${delta(s.lula26 - s.lula22)}<td>${f1(s.pl22)}</td><td>${f1(s.pl26)}</td>${delta(s.pl26 - s.pl22)}</tr>`));
+document.getElementById("ranking").addEventListener("click", (ev) => {
+  const tr = ev.target.closest("tr[data-uf]");
+  if (tr) select(tr.dataset.uf, true);
+});
+const ab = DATA.abroad;
+document.getElementById("abroad-text").textContent =
+  `Brazilians who live abroad vote for president at the consulates. In the 2026 ${DATA.round}, they cast ` +
+  `${n0(ab.votes)} valid votes, ${f1(ab.pct_of_total)}% of the national total. ` +
+  `They count in every national number on this page but belong to no state and appear on no map, ` +
+  `so they always get a line of their own. Lula: ${f1(ab.lula_2022)}% in 2022, ${f1(ab.lula_2026)}% in 2026. ` +
+  `PL: ${f1(ab.pl_2022)}% in 2022, ${f1(ab.pl_2026)}% in 2026.`;
+document.getElementById("abroad-open").addEventListener("click", () => select(ABROAD, true));
+
+table("regions", ["Region", "Lula 2022", "Lula 2026", "Change", "PL 2022", "PL 2026", "Change"],
+  DATA.regions.map((r) => `<tr><td>${r.name}</td><td>${f1(r.lula_2022)}</td><td>${f1(r.lula_2026)}</td>
+    ${delta(r.lula_2026 - r.lula_2022)}<td>${f1(r.pl_2022)}</td><td>${f1(r.pl_2026)}</td>${delta(r.pl_2026 - r.pl_2022)}</tr>`));
+
+// ------------------------------------------------------------------ Part 2
+const R = DATA.rounds;
+let roundsMetric = "lead2";
+document.getElementById("rounds-lead").textContent =
+  `In the first round, Lula got ${f1(R.lula_1t)}% of the valid votes and Flávio Bolsonaro ${f1(R.pl_1t)}%; the other candidates added up to ${f1(R.others_1t)}%. ` +
+  `In the runoff, Lula got ${f1(R.lula_2t)}% and Flávio ${f1(R.pl_2t)}%. ` + R.gains_text;
+document.getElementById("rounds-flips").textContent = R.flips_text;
+
+function drawRounds() {
+  const rows = R.states.filter((s) => s.uf !== ABROAD).map((s) => ({ ...s, id: s.uf }));
+  let data;
+  if (roundsMetric === "shift") {
+    data = [{ type: "choropleth", geojson: STATES_GEO, featureidkey: "properties.uf", locations: rows.map((r) => r.id),
+              text: rows.map((r) => r.name), marker: { line: { color: "white", width: 0.5 } },
+              ...diverging(rows.map((r) => (r.lula2 - r.pl2) - (r.lula1 - r.pl1)), "Change in Lula's lead, in points"),
+              customdata: rows.map((r) => [r.lula1, r.lula2, r.pl1, r.pl2]),
+              hovertemplate: "<b>%{text}</b><br>Lula: %{customdata[0]:.1f}% → %{customdata[1]:.1f}%<br>Flávio: %{customdata[2]:.1f}% → %{customdata[3]:.1f}%<extra></extra>" }];
+    document.getElementById("legend-rounds").innerHTML = shiftLegend;
+  } else {
+    const field = roundsMetric === "lead1" ? 1 : 2;
+    data = leaderTraces(STATES_GEO, "uf", rows, field, (r) =>
+      field === 1 ? `First round: Lula ${f1(r.lula1)}%, Flávio ${f1(r.pl1)}%` : `Runoff: Lula ${f1(r.lula2)}%, Flávio ${f1(r.pl2)}%`);
+    document.getElementById("legend-rounds").innerHTML = leaderLegend(rows, field, R.n_flipped > 0);
+  }
+  Plotly.react("map-rounds", data, LAYOUT(...BRAZIL_VIEW), CONFIG);
+}
+
+table("rounds-table", ["State", "Region", "Leader 1st", "Leader runoff", "Lula 1st", "Lula runoff", "Flávio 1st", "Flávio runoff"],
+  R.states.slice().sort((a, b) => (a.uf === ABROAD) - (b.uf === ABROAD) || b.flipped - a.flipped || a.name.localeCompare(b.name, "en")).map((s) =>
+    `<tr class="${s.flipped ? "flip" : ""}${s.uf === ABROAD ? " apart" : ""}"><td>${s.name}</td><td class="left">${s.uf === ABROAD ? "Not a state" : s.region}</td>
+     <td class="left">${s.lead1}</td><td class="left">${s.lead2}</td><td>${f1(s.lula1)}</td><td>${f1(s.lula2)}</td><td>${f1(s.pl1)}</td><td>${f1(s.pl2)}</td></tr>`));
+
+// ------------------------------------------------------------------ Part 3
+const G = DATA.goias;
+const goByName = new Map(G.rows.map((r) => [r.name, r]));
+let goMetric = "lead2";
+const others1t = G.other_led_1t.length
+  ? ` In the first round, ${G.other_led_1t.length === 1 ? "one city had" : `${G.other_led_1t.length} cities had`} another candidate ahead: ` +
+    G.other_led_1t.map((o) => `${o.name} (${o.leader})`).join(", ") + "."
+  : "";
+document.getElementById("go-lead").textContent =
+  `In Goiás, Lula went from ${f1(G.lula_1t)}% in the first round to ${f1(G.lula_2t)}% in the runoff; Flávio, from ${f1(G.pl_1t)}% to ${f1(G.pl_2t)}%. ` +
+  `Ronaldo Caiado, the state's former governor, got ${f1(G.caiado_1t)}% in the first round. ` +
+  `Lula was ahead in ${G.lula_led_1t} of the ${G.n} cities in the first round and in ${G.lula_led_2t} in the runoff. ` +
+  G.grew_text + others1t;
+document.getElementById("go-note").textContent =
+  `${G.n_flipped === 1 ? "1 city changed its" : `${G.n_flipped} cities changed their`} preferred candidate between the rounds. ` +
+  `${G.corr_text} (a correlation of ${G.corr.toLocaleString("en-US", { minimumFractionDigits: 2 })} between the two measures, city by city). ` +
+  G.biggest_text;
+
+async function drawGoias() {
+  const geo = await loadGeo("GO");
+  let data;
+  if (goMetric === "shift") {
+    data = [{ type: "choropleth", geojson: geo.geojson, featureidkey: "properties.id", locations: G.rows.map((r) => r.id),
+              text: G.rows.map((r) => r.name), marker: { line: { color: "white", width: 0.4 } },
+              ...diverging(G.rows.map((r) => r.shift), "Change in Lula's lead, in points"),
+              customdata: G.rows.map((r) => [r.lula1, r.lula2, r.pl1, r.pl2, r.caiado1]),
+              hovertemplate: "<b>%{text}</b><br>Lula: %{customdata[0]:.1f}% → %{customdata[1]:.1f}%<br>Flávio: %{customdata[2]:.1f}% → %{customdata[3]:.1f}%<br>Caiado, first round: %{customdata[4]:.1f}%<extra></extra>" }];
+    document.getElementById("legend-go").innerHTML = shiftLegend;
+  } else {
+    const field = goMetric === "lead1" ? 1 : 2;
+    data = leaderTraces(geo.geojson, "id", G.rows, field, (r) =>
+      field === 1 ? `First round: Lula ${f1(r.lula1)}%, Flávio ${f1(r.pl1)}%, Caiado ${f1(r.caiado1)}%`
+                  : `Runoff: Lula ${f1(r.lula2)}%, Flávio ${f1(r.pl2)}%`);
+    document.getElementById("legend-go").innerHTML = leaderLegend(G.rows, field, G.n_flipped > 0);
+  }
+  Plotly.react("map-go", data, LAYOUT(...viewOf(geo)), CONFIG);
+}
+
+function showGoCard(r) {
+  document.getElementById("go-card").innerHTML = !r ? "" : `
+    <h2 style="margin-top:18px">${r.name}</h2>
+    <p class="sub">First round: ${r.lead1} ahead · Runoff: ${r.lead2} ahead${r.flipped ? " · changed its preferred candidate" : ""}</p>
+    <p><strong>Out of every 100 valid votes:</strong></p>
+    ${candidate("Lula (PT)", PT, r.lula1, r.lula2, ["1st round", "Runoff"])}
+    ${candidate("Flávio Bolsonaro (PL)", PL, r.pl1, r.pl2, ["1st round", "Runoff"])}
+    <ul>
+      <li>Ronaldo Caiado got ${f1(r.caiado1)}% of the valid votes here in the first round.</li>
+      <li>Lula's lead over Flávio moved ${signed(r.shift)} points between the rounds.</li>
+      <li>${n0(r.abst1)} of every 100 registered voters did not vote in the first round; ${n0(r.abst2)} in the runoff.</li>
+    </ul>`;
+}
+document.getElementById("go-names").innerHTML = G.rows.map((r) => r.name).sort((a, b) => a.localeCompare(b, "pt-BR"))
+  .map((n) => `<option value="${n}">`).join("");
+document.getElementById("go-search").addEventListener("input", (ev) => {
+  const r = goByName.get(ev.target.value);
+  if (r) showGoCard(r);
+});
+showGoCard(goByName.get("Goiânia"));
+
+table("go-table", ["City", "Leader 1st", "Leader runoff", "Lula 1st", "Lula runoff", "Flávio 1st", "Flávio runoff", "Caiado 1st", "Change"],
+  G.rows.slice().sort((a, b) => Math.abs(b.shift) - Math.abs(a.shift)).slice(0, 15).map((r) =>
+    `<tr class="${r.flipped ? "flip" : ""}"><td>${r.name}</td><td class="left">${r.lead1}</td><td class="left">${r.lead2}</td>
+     <td>${f1(r.lula1)}</td><td>${f1(r.lula2)}</td><td>${f1(r.pl1)}</td><td>${f1(r.pl2)}</td><td>${f1(r.caiado1)}</td>${delta(r.shift)}</tr>`));
+
+// ------------------------------------------------------------------ toggles
+const redraw = {
+  c: (m) => { metric = m; drawLegend(); drawBrazil(); if (current) drawState(current); },
+  b: (m) => { roundsMetric = m; drawRounds(); },
+  a: (m) => { goMetric = m; drawGoias(); },
+};
+for (const group of document.querySelectorAll(".toggle[data-group]")) {
+  for (const button of group.querySelectorAll("button")) {
+    button.addEventListener("click", () => {
+      group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b === button));
+      redraw[group.dataset.group](button.dataset.metric);
+    });
+  }
+}
+
+drawLegend();
+drawBrazil();
+drawRounds();
+drawGoias();
+document.getElementById("map-br").on("plotly_click", (ev) => select(ev.points[0].location, true));
+// a #UF in the address opens that state; any other anchor (#parte-2, #parte-3) is left alone
+select(byUf.has(location.hash.slice(1)) ? location.hash.slice(1) : DEFAULT_STATE, false, !byUf.has(location.hash.slice(1)));
+</script>
+</body>
+</html>

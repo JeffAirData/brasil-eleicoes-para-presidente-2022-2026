@@ -20,6 +20,9 @@
   h3 { font-size: 1.15rem; margin: 0 0 4px; }
   p { color: var(--ink-2); line-height: 1.5; margin: 6px 0; }
   .lead { font-size: 1.15rem; color: var(--ink); }
+  .lang { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin: 0 0 12px; color: var(--muted); }
+  .lang a { text-decoration: none; padding: 4px 2px; }
+  .lang a[aria-current="page"] { color: var(--ink); font-weight: 700; }
   section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin: 20px 0; padding: 20px; }
   .part { margin: 44px 0 0; padding: 0 4px; border: 0; background: none; }
   .part .num { color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.85rem; }
@@ -74,6 +77,9 @@
 </head>
 <body>
 <main>
+<nav class="lang" aria-label="Idioma">
+  <a href="./" aria-current="page">Português</a><span aria-hidden="true">|</span><a href="en/" lang="en" data-keep-hash>English</a>
+</nav>
 <h1>Como o Brasil votou para presidente: 2022 x 2026</h1>
 <p class="lead" id="headline"></p>
 
@@ -234,6 +240,10 @@ const signed = (v) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${f1(Math.abs(v))}`;
 const plNames = `${DATA.pl_name[2022].split(" ")[0]} Bolsonaro em 2022, ${DATA.pl_name[2026].split(" ")[0]} em 2026`;
 let metric = "change";
 let current = null;
+
+// a troca de idioma mantém o estado ou a parte abertos
+document.querySelectorAll("a[data-keep-hash]").forEach((a) =>
+  a.addEventListener("click", () => { a.href = a.getAttribute("href").split("#")[0] + location.hash; }));
 
 function candidate(name, c, before, after, labels = [2022, 2026]) {
   const row = (label, value, cls) => `<div class="row ${cls}"><span>${label}</span>

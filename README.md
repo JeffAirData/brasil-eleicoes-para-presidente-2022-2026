@@ -4,6 +4,8 @@ A eleição para presidente de 2026 comparada em três recortes, com os dados ab
 
 👉 **[Abrir a página interativa](https://jeffairdata.github.io/brasil-eleicoes-para-presidente-2022-2026/)**: escolha um estado ou procure uma cidade de Goiás.
 
+🇬🇧 **English:** the same page, with the same numbers, at [jeffairdata.github.io/brasil-eleicoes-para-presidente-2022-2026/en/](https://jeffairdata.github.io/brasil-eleicoes-para-presidente-2022-2026/en/). The "Português | English" switch at the top of each page moves between them.
+
 ## Os três recortes
 
 | | Recorte | Na página | Painel |
@@ -85,7 +87,7 @@ python -m venv .venv
 pip install -r requirements.txt
 python src/download_tse.py      # cerca de 1 GB, em Data/raw/tse/
 python src/build_dataset.py     # tabelas em Data/processed/
-python src/build_charts.py      # gráficos, cartões, painéis, página (docs/) e posts (publication/)
+python src/build_charts.py      # gráficos, cartões, painéis, páginas (docs/ e docs/en/) e posts (publication/)
 python src/check_totals.py      # conferência com o relatório oficial do TSE
 ```
 
@@ -95,11 +97,17 @@ O `check_totals.py` precisa do relatório oficial, que o `download_tse.py` não 
 
 ### Posts
 
-Em `publication/`, um post por recorte, na ordem da série: `post_1_goias_pt.md`, `post_2_estados_pt.md` e `post_3_2022x2026_pt.md`. As versões em inglês virão ao lado, com o sufixo `_en`.
+Em `publication/`, um post por recorte, na ordem da série: `post_1_goias_pt.md`, `post_2_estados_pt.md` e `post_3_2022x2026_pt.md`. Em inglês, `post_unico_en.md` junta os três num post só.
+
+O carrossel do LinkedIn fica em `publication/Carrocel Painel 2 Linkedin/`: `gerar_carrossel.py` monta o PDF em português e, com `--lang en`, em inglês, a partir dos gráficos de `docs/img` e `docs/en/img`.
+
+### Duas línguas
+
+O `build_charts.py` gera as duas páginas de uma vez: português em `docs/` (template `src/page_template.html`) e inglês em `docs/en/` (template `src/page_template_en.html`), com os mesmos números. Os mapas por município (`docs/geo/`) são compartilhados. Os cartões, os painéis e os posts em português saem só em português.
 
 ## Projeto anterior
 
-A comparação do **1º turno** de 2022 com o de 2026, em inglês, continua publicada em [brazil-president-election-2022-2026](https://github.com/JeffAirData/brazil-president-election-2022-2026).
+A comparação do **1º turno** de 2022 com o de 2026, em inglês, foi o projeto anterior, no repositório `brazil-president-election-2022-2026`, hoje fora do ar.
 
 ## Licença
 

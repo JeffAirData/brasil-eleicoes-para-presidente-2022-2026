@@ -1,6 +1,7 @@
 """Build the static charts (PNG), the map files, the interactive page and the post draft.
 
-Three comparisons, all labelled in Brazilian Portuguese:
+Two languages from the same numbers: Brazilian Portuguese in docs/ and English in docs/en/.
+Three comparisons:
   (c) Brazil, state by state: the latest round both elections share (the runoff), 2022 vs 2026;
   (b) Brazil, state by state: 2026 first round vs 2026 runoff;
   (a) Goiás, municipality by municipality: 2026 first round vs 2026 runoff.
@@ -40,9 +41,19 @@ NAME_PT = {**STATE_NAMES, "DF": "Distrito Federal", ABROAD: "Exterior"}
 REGION_PT = {"North": "Norte", "Northeast": "Nordeste", "Central-West": "Centro-Oeste", "Southeast": "Sudeste",
              "South": "Sul", "Abroad": "Exterior"}
 
+NAME_EN = {**STATE_NAMES, "DF": "Federal District", ABROAD: "Abroad"}
+TEXTS = {
+    "pt": {"ROUND_NAME": ROUND_NAME, "NAME_PT": NAME_PT, "REGION_PT": REGION_PT,
+           "SOURCE": "Fonte: TSE, dados abertos. Votos válidos para presidente."},
+    "en": {"ROUND_NAME": {1: "first round", 2: "runoff"}, "NAME_PT": NAME_EN,
+           "REGION_PT": {"North": "North", "Northeast": "Northeast", "Central-West": "Central-West",
+                         "Southeast": "Southeast", "South": "South", "Abroad": "Abroad"},
+           "SOURCE": "Source: TSE open data. Valid votes for president."},
+}
+
 PL, PT, OTHERS, CAIADO_COLOR = "#2a78d6", "#e34948", "#c3c2b7", "#d99a1e"
 INK, INK_2, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#fcfcfb"
-SOURCE = "Fonte: TSE, dados abertos. Votos válidos para presidente."
+SOURCE = TEXTS["pt"]["SOURCE"]
 REPO = "github.com/JeffAirData"
 PAGE_URL = "https://jeffairdata.github.io/brasil-eleicoes-para-presidente-2022-2026/"
 CODE_URL = "https://github.com/JeffAirData/brasil-eleicoes-para-presidente-2022-2026"
@@ -55,18 +66,31 @@ plt.rcParams.update({
 })
 
 
+def set_lang(lang: str) -> None:
+    """Point every label and output folder at one language: 'pt' builds docs/, 'en' builds docs/en/."""
+    global LANG, DOCS_DIR, IMG_DIR, ROUND_NAME, NAME_PT, REGION_PT, SOURCE
+    LANG = lang
+    DOCS_DIR = ROOT / "docs" / ("en" if lang == "en" else "")
+    IMG_DIR = DOCS_DIR / "img"
+    ROUND_NAME, NAME_PT, REGION_PT, SOURCE = (TEXTS[lang][k] for k in ("ROUND_NAME", "NAME_PT", "REGION_PT", "SOURCE"))
+
+
+def t(pt: str, en: str) -> str:
+    return en if LANG == "en" else pt
+
+
 def br(v: float, digits: int = 1) -> str:
-    """Number with a decimal comma."""
-    return f"{v:.{digits}f}".replace(".", ",")
+    """Number with a decimal comma (a decimal point in English)."""
+    return f"{v:.{digits}f}" if LANG == "en" else f"{v:.{digits}f}".replace(".", ",")
 
 
 def thousands(n: int) -> str:
-    return f"{n:,}".replace(",", ".")
+    return f"{n:,}" if LANG == "en" else f"{n:,}".replace(",", ".")
 
 
 def millions(n: int) -> str:
     sign = "+" if n > 0 else "−" if n < 0 else ""
-    return f"{sign}{br(abs(n) / 1e6)} mi"
+    return f"{sign}{br(abs(n) / 1e6)}{t(' mi', 'M')}"
 
 
 def plural(n: int, one: str, many: str) -> str:
@@ -76,11 +100,15 @@ def plural(n: int, one: str, many: str) -> str:
 def mi_words(n: int) -> str:
     """'10,4 milhões', '1,8 milhão'."""
     v = abs(n) / 1e6
+    if LANG == "en":
+        return f"{br(v)} million"
     return f"{br(v)} {'milhão' if v < 2 else 'milhões'}"
 
 
 def gained(who: str, n: int) -> str:
     """'Lula ganhou 10,4 milhões de votos' (or 'perdeu', when the count fell)."""
+    if LANG == "en":
+        return f"{who} {'gained' if n >= 0 else 'lost'} {mi_words(n)} votes"
     return f"{who} {'ganhou' if n >= 0 else 'perdeu'} {mi_words(n)} de votos"
 
 
@@ -90,9 +118,12 @@ def margin_text(m1: float, m2: float) -> str:
         return ("Lula", "Flávio") if m >= 0 else ("Flávio", "Lula")
     if (m1 >= 0) == (m2 >= 0):
         a, b = side(m1)
-        return f"a vantagem de {a} sobre {b} passou de {br(abs(m1))} para {br(abs(m2))} pontos"
-    return (f"{side(m1)[0]} liderava por {br(abs(m1))} pontos no 1º turno e {side(m2)[0]} venceu o 2º "
-            f"por {br(abs(m2))}")
+        return t(f"a vantagem de {a} sobre {b} passou de {br(abs(m1))} para {br(abs(m2))} pontos",
+                 f"{a}'s lead over {b} went from {br(abs(m1))} to {br(abs(m2))} points")
+    return t(f"{side(m1)[0]} liderava por {br(abs(m1))} pontos no 1º turno e {side(m2)[0]} venceu o 2º "
+             f"por {br(abs(m2))}",
+             f"{side(m1)[0]} led by {br(abs(m1))} points in the first round and {side(m2)[0]} won the runoff "
+             f"by {br(abs(m2))}")
 
 
 def load() -> dict:
@@ -196,16 +227,21 @@ def lula_trend(h: dict) -> str:
     """The majority direction of Lula's share across states, with the extreme in that direction."""
     if h["lula_rose_in"] > h["lula_fell_in"]:
         state, value = h["biggest_gain"]
-        return (f"A fatia de Lula subiu em {h['lula_rose_in']} de {h['n_states']} estados. "
-                f"Maior alta: {state}, com {br(value)} pontos.")
+        return t(f"A fatia de Lula subiu em {h['lula_rose_in']} de {h['n_states']} estados. "
+                 f"Maior alta: {state}, com {br(value)} pontos.",
+                 f"Lula's share rose in {h['lula_rose_in']} of {h['n_states']} states. "
+                 f"Biggest gain: {state}, {br(value)} points.")
     state, value = h["biggest_drop"]
-    return (f"A fatia de Lula caiu em {h['lula_fell_in']} de {h['n_states']} estados. "
-            f"Maior queda: {state}, com {br(abs(value))} pontos.")
+    return t(f"A fatia de Lula caiu em {h['lula_fell_in']} de {h['n_states']} estados. "
+             f"Maior queda: {state}, com {br(abs(value))} pontos.",
+             f"Lula's share fell in {h['lula_fell_in']} of {h['n_states']} states. "
+             f"Biggest drop: {state}, {br(abs(value))} points.")
 
 
 def abroad_note(h: dict) -> str:
     a = h["abroad"]
-    return (f"{NAME_PT[ABROAD]} (no total nacional, fora do mapa): {thousands(a['votes'])} votos válidos · "
+    return (f"{NAME_PT[ABROAD]} {t('(no total nacional, fora do mapa)', '(in the national total, not on the map)')}: "
+            f"{thousands(a['votes'])} {t('votos válidos', 'valid votes')} · "
             f"Lula {br(a['lula_2026'])}%, {PL_NAME[2026]} {br(a['pl_2026'])}%")
 
 
@@ -268,8 +304,13 @@ def rounds_headline(d: dict, rt: pd.DataFrame) -> dict:
 
 def flips_sentence(rh: dict) -> str:
     if not rh["n_flipped"]:
-        return "Nenhum estado mudou de candidato preferido entre os turnos."
+        return t("Nenhum estado mudou de candidato preferido entre os turnos.",
+                 "No state changed its preferred candidate between the rounds.")
     names = ", ".join(f"{f['state']} ({f['from']} → {f['to']})" for f in rh["flips"])
+    if LANG == "en":
+        n = rh["n_flipped"]
+        return (f"{n} {'state' if n == 1 else 'states'} changed {'its' if n == 1 else 'their'} preferred candidate "
+                f"between the rounds: {names}.")
     verb = "mudou" if rh["n_flipped"] == 1 else "mudaram"
     return f"{plural(rh['n_flipped'], 'estado', 'estados')} {verb} de candidato preferido entre os turnos: {names}."
 
@@ -332,14 +373,20 @@ def goias_headline(d: dict, gt: pd.DataFrame) -> dict:
 
 
 def gains_sentence(rh: dict) -> str:
-    return (f"Do 1º para o 2º turno, {gained('Lula', rh['lula_gain_votes'])} e "
-            f"{gained('Flávio', rh['pl_gain_votes'])}.")
+    return (f"{t('Do 1º para o 2º turno', 'From the first round to the runoff')}, "
+            f"{gained('Lula', rh['lula_gain_votes'])} {t('e', 'and')} {gained('Flávio', rh['pl_gain_votes'])}.")
 
 
 def flows_sentence(rh: dict) -> str:
     """Where the runoff's extra votes came from, as net balances (exact: they add up to the two gains)."""
     both = rh["lula_gain_votes"] + rh["pl_gain_votes"]
     tc, bs = rh["turnout_change"], rh["blank_spoiled_change"]
+    if LANG == "en":
+        return (f"Together, the two gained {mi_words(both)} votes. The eliminated candidates had "
+                f"{mi_words(rh['others_votes_1t'])} in the first round; the rest came from "
+                f"{'more' if tc >= 0 else 'fewer'} people turning out ({mi_words(tc)}) and from "
+                f"{'fewer' if bs <= 0 else 'more'} blank and spoiled ballots ({mi_words(bs)}). These are net "
+                f"balances: they show where the increase came from, not who voted for whom.")
     return (f"Juntos, os dois ganharam {mi_words(both)} de votos. Os candidatos eliminados tinham "
             f"{mi_words(rh['others_votes_1t'])} no 1º turno; o restante veio de {'mais' if tc >= 0 else 'menos'} "
             f"eleitores indo votar ({mi_words(tc)}) e de {'menos' if bs <= 0 else 'mais'} votos brancos e nulos "
@@ -348,12 +395,17 @@ def flows_sentence(rh: dict) -> str:
 
 def grew_sentence(gh: dict) -> str:
     if gh["lula_grew"] == gh["n"] and gh["pl_grew"] == gh["n"]:
-        return f"Lula e Flávio cresceram nas {gh['n']} cidades."
-    return f"Lula cresceu em {gh['lula_grew']} das {gh['n']} cidades; Flávio, em {gh['pl_grew']}."
+        return t(f"Lula e Flávio cresceram nas {gh['n']} cidades.", f"Lula and Flávio both grew in all {gh['n']} cities.")
+    return t(f"Lula cresceu em {gh['lula_grew']} das {gh['n']} cidades; Flávio, em {gh['pl_grew']}.",
+             f"Lula grew in {gh['lula_grew']} of the {gh['n']} cities; Flávio, in {gh['pl_grew']}.")
 
 
 def biggest_sentence(gh: dict) -> str:
     b = gh["biggest"]
+    if LANG == "en":
+        return (f"The biggest change was in {b['name']}: {margin_text(b['margin_1t'], b['margin_2t'])}"
+                f"{'' if b['flipped'] else ', without switching sides'}. Caiado had {br(b['caiado_1t'])}% there "
+                f"in the first round.")
     return (f"A maior mudança foi em {b['name']}: {margin_text(b['margin_1t'], b['margin_2t'])}"
             f"{'' if b['flipped'] else ', sem troca de lado'}. Caiado tinha {br(b['caiado_1t'])}% ali no 1º turno.")
 
@@ -361,10 +413,13 @@ def biggest_sentence(gh: dict) -> str:
 def corr_sentence(r: float) -> str:
     """Plain-language reading of the Caiado / Flávio correlation; aggregated data, no claim about voters."""
     if r >= 0.5:
-        return "Onde Caiado foi mais votado no 1º turno, Flávio tendeu a crescer mais no 2º turno"
+        return t("Onde Caiado foi mais votado no 1º turno, Flávio tendeu a crescer mais no 2º turno",
+                 "Where Caiado did best in the first round, Flávio tended to grow more in the runoff")
     if r <= -0.5:
-        return "Onde Caiado foi mais votado no 1º turno, Flávio tendeu a crescer menos no 2º turno"
-    return "Não há relação clara entre o voto em Caiado no 1º turno e o crescimento de Flávio no 2º turno"
+        return t("Onde Caiado foi mais votado no 1º turno, Flávio tendeu a crescer menos no 2º turno",
+                 "Where Caiado did best in the first round, Flávio tended to grow less in the runoff")
+    return t("Não há relação clara entre o voto em Caiado no 1º turno e o crescimento de Flávio no 2º turno",
+             "There is no clear link between Caiado's first-round vote and Flávio's growth in the runoff")
 
 
 # ---------------------------------------------------------------- posts
@@ -505,8 +560,9 @@ def national_rows(d: dict, rounds=None) -> list:
     rows = []
     for year, rnd in rounds or d["rounds"]:
         lula, pl = share(d["national"], year, rnd, LULA), share(d["national"], year, rnd, PL_NUMBER)
-        rows.append((f"{year}\n{ROUND_NAME[rnd]}", [("Lula (PT)", lula, PT), (f"{PL_NAME[year]} (PL)", pl, PL),
-                                                     ("Outros", 100 - lula - pl, OTHERS)]))
+        rows.append((f"{year}\n{ROUND_NAME[rnd].capitalize()}",
+                     [("Lula (PT)", lula, PT), (f"{PL_NAME[year]} (PL)", pl, PL),
+                      (t("Outros", "Others"), 100 - lula - pl, OTHERS)]))
     return rows
 
 
@@ -535,12 +591,13 @@ def draw_leader_maps(axes, geo, titles, fontsize: float = 15, edge: float = 0.7)
 
 def leader_legend(fig, y: float, fontsize: float, numbers=(LULA, PL_NUMBER), flipped: bool = False,
                   d: dict | None = None) -> None:
+    ahead = t("à frente", "ahead")
     if d is None:
-        handles = [Patch(color=PT, label="Lula (PT) à frente"), Patch(color=PL, label="Bolsonaro (PL) à frente")]
+        handles = [Patch(color=PT, label=f"Lula (PT) {ahead}"), Patch(color=PL, label=f"Bolsonaro (PL) {ahead}")]
     else:
-        handles = [Patch(color=candidate_color(n), label=f"{candidate_name(d, n)} à frente") for n in numbers]
+        handles = [Patch(color=candidate_color(n), label=f"{candidate_name(d, n)} {ahead}") for n in numbers]
     if flipped:
-        handles.append(Patch(facecolor="none", edgecolor=INK, linewidth=2, label="mudou de líder"))
+        handles.append(Patch(facecolor="none", edgecolor=INK, linewidth=2, label=t("mudou de líder", "changed leader")))
     fig.legend(handles=handles, loc="lower center", ncol=len(handles), frameon=False, fontsize=fontsize,
                bbox_to_anchor=(0.5, y))
 
@@ -548,9 +605,10 @@ def leader_legend(fig, y: float, fontsize: float, numbers=(LULA, PL_NUMBER), fli
 def chart_national(d: dict, h: dict) -> None:
     fig, ax = plt.subplots(figsize=(11, 1.6 + 1.25 * len(d["rounds"])))
     draw_national(ax, d)
-    fig.suptitle(f"Brasil, {h['round_name']}: Lula {br(h['lula_2022'])}% em 2022, {br(h['lula_2026'])}% em 2026",
+    fig.suptitle(t(f"Brasil, {h['round_name']}: Lula {br(h['lula_2022'])}% em 2022, {br(h['lula_2026'])}% em 2026",
+                   f"Brazil, {h['round_name']}: Lula {br(h['lula_2022'])}% in 2022, {br(h['lula_2026'])}% in 2026"),
                  x=0.02, ha="left", fontsize=16, fontweight="bold")
-    fig.text(0.02, 0.01, SOURCE + " Linha pontilhada: 50%.", color=MUTED, fontsize=9)
+    fig.text(0.02, 0.01, SOURCE + t(" Linha pontilhada: 50%.", " Dotted line: 50%."), color=MUTED, fontsize=9)
     fig.savefig(IMG_DIR / "01_national_result.png", dpi=200, bbox_inches="tight", pad_inches=0.25)
     plt.close(fig)
 
@@ -560,12 +618,17 @@ def chart_state_maps(geo, h: dict) -> None:
     draw_state_maps(axes, geo, h)
     leader_legend(fig, 0.075, 11)
     to_pl = h["flipped_to_pl"]
-    flipped = f"{to_pl} estado virou" if to_pl == 1 else f"{to_pl} estados viraram"
-    fig.suptitle(f"Quem liderou em cada estado, {h['round_name']}: "
-                 f"{flipped} para Bolsonaro, {h['flipped_to_pt']} para Lula",
-                 x=0.03, ha="left", fontsize=17, fontweight="bold")
+    if LANG == "en":
+        title = (f"Who led in each state, {h['round_name']}: {to_pl} {'state' if to_pl == 1 else 'states'} "
+                 f"flipped to Bolsonaro, {h['flipped_to_pt']} to Lula")
+    else:
+        flipped = f"{to_pl} estado virou" if to_pl == 1 else f"{to_pl} estados viraram"
+        title = (f"Quem liderou em cada estado, {h['round_name']}: "
+                 f"{flipped} para Bolsonaro, {h['flipped_to_pt']} para Lula")
+    fig.suptitle(title, x=0.03, ha="left", fontsize=17, fontweight="bold")
     fig.text(0.03, 0.045, abroad_note(h), color=INK_2, fontsize=10)
-    fig.text(0.03, 0.015, SOURCE + " 26 estados e o Distrito Federal.", color=MUTED, fontsize=9)
+    fig.text(0.03, 0.015, SOURCE + t(" 26 estados e o Distrito Federal.", " 26 states and the Federal District."),
+             color=MUTED, fontsize=9)
     fig.subplots_adjust(top=0.84, bottom=0.14, wspace=0.02)
     fig.savefig(IMG_DIR / "02_state_maps.png", dpi=100)
     plt.close(fig)
@@ -591,10 +654,10 @@ def chart_state_shift(states: pd.DataFrame, h: dict) -> None:
     ax.grid(axis="x", color=GRID, linewidth=0.8)
     ax.set_axisbelow(True)
     ax.spines["left"].set_visible(False)
-    ax.set_xlabel(f"Votos válidos de Lula, {h['round_name']} (%)")
+    ax.set_xlabel(t(f"Votos válidos de Lula, {h['round_name']} (%)", f"Lula's valid votes, {h['round_name']} (%)"))
     ax.legend(frameon=False, loc="upper left", fontsize=11)
     ax.set_title(lula_trend(h).split(". ")[0], loc="left", fontsize=16, fontweight="bold", color=INK, pad=14)
-    fig.text(0.02, 0.0, SOURCE + " Linha pontilhada: 50%.", color=MUTED, fontsize=9)
+    fig.text(0.02, 0.0, SOURCE + t(" Linha pontilhada: 50%.", " Dotted line: 50%."), color=MUTED, fontsize=9)
     fig.savefig(IMG_DIR / "03_states_shift.png", dpi=200, bbox_inches="tight", pad_inches=0.25)
     plt.close(fig)
 
@@ -602,16 +665,22 @@ def chart_state_shift(states: pd.DataFrame, h: dict) -> None:
 def chart_br_rounds_maps(state_shapes, rt: pd.DataFrame, rh: dict, d: dict) -> None:
     geo = state_shapes.merge(rt, left_on="abbrev_state", right_on="uf", how="inner")
     fig, axes = plt.subplots(1, 2, figsize=(12, 6.5))
-    titles = [f"1º turno: Lula {rh['lula_states_1t']} × {rh['pl_states_1t']} Flávio",
-              f"2º turno: Lula {rh['lula_states_2t']} × {rh['pl_states_2t']} Flávio"]
+    titles = [f"{ROUND_NAME[1].capitalize()}: Lula {rh['lula_states_1t']} × {rh['pl_states_1t']} Flávio",
+              f"{ROUND_NAME[2].capitalize()}: Lula {rh['lula_states_2t']} × {rh['pl_states_2t']} Flávio"]
     draw_leader_maps(axes, geo, titles)
     numbers = sorted(set(rt["leader_1t"]) | set(rt["leader_2t"]), key=lambda n: (n != LULA, n != PL_NUMBER, n))
     leader_legend(fig, 0.075, 11, numbers, flipped=bool(rh["n_flipped"]), d=d)
-    title = (f"2026: {plural(rh['n_flipped'], 'estado mudou', 'estados mudaram')} de candidato preferido "
-             f"entre os turnos" if rh["n_flipped"] else "2026: nenhum estado mudou de candidato preferido entre os turnos")
+    n = rh["n_flipped"]
+    if LANG == "en":
+        title = (f"2026: {plural(n, 'state', 'states')} changed {'its' if n == 1 else 'their'} preferred candidate "
+                 f"between the rounds" if n else "2026: no state changed its preferred candidate between the rounds")
+    else:
+        title = (f"2026: {plural(n, 'estado mudou', 'estados mudaram')} de candidato preferido "
+                 f"entre os turnos" if n else "2026: nenhum estado mudou de candidato preferido entre os turnos")
     fig.suptitle(title, x=0.03, ha="left", fontsize=17, fontweight="bold")
     fig.text(0.03, 0.045, flips_sentence(rh) if rh["n_flipped"] else "", color=INK_2, fontsize=10)
-    fig.text(0.03, 0.015, SOURCE + " Cor: candidato mais votado em cada estado.", color=MUTED, fontsize=9)
+    fig.text(0.03, 0.015, SOURCE + t(" Cor: candidato mais votado em cada estado.",
+                                     " Color: the candidate with the most votes in each state."), color=MUTED, fontsize=9)
     fig.subplots_adjust(top=0.84, bottom=0.14, wspace=0.02)
     fig.savefig(IMG_DIR / "04_br_turnos_mapas.png", dpi=100)
     plt.close(fig)
@@ -641,30 +710,41 @@ def chart_br_rounds_margin(rt: pd.DataFrame, rh: dict) -> None:
     ax.grid(axis="x", color=GRID, linewidth=0.8)
     ax.set_axisbelow(True)
     ax.spines["left"].set_visible(False)
-    ax.set_xlabel("Vantagem de Lula sobre Flávio, em pontos (negativo: Flávio à frente)")
+    ax.set_xlabel(t("Vantagem de Lula sobre Flávio, em pontos (negativo: Flávio à frente)",
+                    "Lula's lead over Flávio, in points (negative: Flávio ahead)"))
     ax.legend(handles=[Line2D([], [], marker="o", ls="", markerfacecolor=SURFACE, markeredgecolor=INK_2, ms=8,
-                              label="1º turno"),
+                              label=t("1º turno", "First round")),
                        Line2D([], [], marker="o", ls="", markerfacecolor=PT, markeredgecolor=SURFACE, ms=8,
-                              label="2º turno (cor de quem venceu)")],
+                              label=t("2º turno (cor de quem venceu)", "Runoff (color of the winner)"))],
               frameon=False, loc="upper left", fontsize=11)
-    ax.set_title("2026: a vantagem de Lula sobre Flávio no 1º e no 2º turno", loc="left", fontsize=16,
+    ax.set_title(t("2026: a vantagem de Lula sobre Flávio no 1º e no 2º turno",
+                   "2026: Lula's lead over Flávio in the first round and the runoff"), loc="left", fontsize=16,
                  fontweight="bold", color=INK, pad=14)
-    fig.text(0.02, 0.0, SOURCE + " Em negrito: estados que mudaram de candidato preferido.", color=MUTED, fontsize=9)
+    fig.text(0.02, 0.0, SOURCE + t(" Em negrito: estados que mudaram de candidato preferido.",
+                                   " In bold: states that changed their preferred candidate."), color=MUTED, fontsize=9)
     fig.savefig(IMG_DIR / "05_br_turnos_estados.png", dpi=200, bbox_inches="tight", pad_inches=0.25)
     plt.close(fig)
 
 
 def chart_go_rounds_maps(go_geo, gh: dict, d: dict) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(12, 7))
-    titles = [f"1º turno: Lula à frente em {gh['lula_led_1t']}", f"2º turno: Lula à frente em {gh['lula_led_2t']}"]
+    titles = [t(f"1º turno: Lula à frente em {gh['lula_led_1t']}", f"First round: Lula ahead in {gh['lula_led_1t']}"),
+              t(f"2º turno: Lula à frente em {gh['lula_led_2t']}", f"Runoff: Lula ahead in {gh['lula_led_2t']}")]
     draw_leader_maps(axes, go_geo, titles, edge=0.4)
     numbers = sorted(set(go_geo["leader_1t"]) | set(go_geo["leader_2t"]),
                      key=lambda n: (n != LULA, n != PL_NUMBER, n))
     leader_legend(fig, 0.06, 11, numbers, flipped=bool(gh["n_flipped"]), d=d)
-    title = (f"Goiás: {plural(gh['n_flipped'], 'município mudou', 'municípios mudaram')} de candidato preferido "
-             f"entre os turnos" if gh["n_flipped"] else "Goiás: nenhum município mudou de candidato preferido")
+    n = gh["n_flipped"]
+    if LANG == "en":
+        title = (f"Goiás: {plural(n, 'city', 'cities')} changed {'its' if n == 1 else 'their'} preferred candidate "
+                 f"between the rounds" if n else "Goiás: no city changed its preferred candidate")
+    else:
+        title = (f"Goiás: {plural(n, 'município mudou', 'municípios mudaram')} de candidato preferido "
+                 f"entre os turnos" if n else "Goiás: nenhum município mudou de candidato preferido")
     fig.suptitle(title, x=0.03, ha="left", fontsize=17, fontweight="bold")
-    fig.text(0.03, 0.015, SOURCE + f" {gh['n']} municípios. Cor: candidato mais votado.", color=MUTED, fontsize=9)
+    fig.text(0.03, 0.015, SOURCE + t(f" {gh['n']} municípios. Cor: candidato mais votado.",
+                                     f" {gh['n']} cities. Color: the candidate with the most votes."),
+             color=MUTED, fontsize=9)
     fig.subplots_adjust(top=0.86, bottom=0.12, wspace=0.02)
     fig.savefig(IMG_DIR / "06_go_turnos_mapas.png", dpi=100)
     plt.close(fig)
@@ -679,13 +759,17 @@ def chart_go_caiado(gt: pd.DataFrame, gh: dict) -> None:
                     color=INK)
     ax.grid(color=GRID, linewidth=0.8)
     ax.set_axisbelow(True)
-    ax.set_xlabel("Votos válidos de Ronaldo Caiado no 1º turno (%)")
-    ax.set_ylabel("Crescimento de Flávio do 1º para o 2º turno (pontos)")
+    ax.set_xlabel(t("Votos válidos de Ronaldo Caiado no 1º turno (%)", "Ronaldo Caiado's valid votes, first round (%)"))
+    ax.set_ylabel(t("Crescimento de Flávio do 1º para o 2º turno (pontos)",
+                    "Flávio's growth from the first round to the runoff (points)"))
     ax.set_title(corr_sentence(gh["corr_caiado_pl"]), loc="left", fontsize=15, fontweight="bold", color=INK, pad=28)
-    ax.text(0, 1.02, f"Cada bolha é um dos {gh['n']} municípios de Goiás, do tamanho do seu eleitorado. "
-                     f"Correlação: {br(gh['corr_caiado_pl'], 2)}.",
+    ax.text(0, 1.02, t(f"Cada bolha é um dos {gh['n']} municípios de Goiás, do tamanho do seu eleitorado. "
+                       f"Correlação: {br(gh['corr_caiado_pl'], 2)}.",
+                       f"Each bubble is one of the {gh['n']} cities of Goiás, sized by its electorate. "
+                       f"Correlation: {br(gh['corr_caiado_pl'], 2)}."),
             transform=ax.transAxes, fontsize=10.5, color=INK_2)
-    fig.text(0.02, 0.0, SOURCE + " Dados agregados por município: mostram onde o voto mudou, não quem mudou.",
+    fig.text(0.02, 0.0, SOURCE + t(" Dados agregados por município: mostram onde o voto mudou, não quem mudou.",
+                                   " Data aggregated by city: they show where the vote shifted, not who changed."),
              color=MUTED, fontsize=9)
     fig.savefig(IMG_DIR / "07_go_caiado.png", dpi=200, bbox_inches="tight", pad_inches=0.25)
     plt.close(fig)
@@ -962,34 +1046,27 @@ def build_page(d: dict, states: pd.DataFrame, state_shapes, h: dict, rt: pd.Data
     }
     shapes = to_geojson(state_shapes[["abbrev_state", "geometry"]].rename(columns={"abbrev_state": "uf"}), 0.05)
 
-    html = (Path(__file__).parent / "page_template.html").read_text(encoding="utf-8")
+    template = "page_template_en.html" if LANG == "en" else "page_template.html"
+    html = (Path(__file__).parent / template).read_text(encoding="utf-8")
     html = html.replace("__DATA__", json.dumps(data, ensure_ascii=False))
     html = html.replace("__STATES_GEO__", json.dumps(shapes, ensure_ascii=False, separators=(",", ":")))
     html = html.replace("__CODE_URL__", CODE_URL)
     (DOCS_DIR / "index.html").write_text(html, encoding="utf-8")
 
 
-def main() -> None:
+def build(lang: str, d: dict, state_shapes, muni_shapes) -> None:
+    """Every chart and the page in one language; the cards, panels, Portuguese posts and map files only once."""
+    set_lang(lang)
     IMG_DIR.mkdir(parents=True, exist_ok=True)
-    d = load()
     states = state_table(d)
     h = headline(d, states)
     rt = rounds_table(d)
     rh = rounds_headline(d, rt)
-    # summary_states.csv belongs to the frozen first-round page; the runoff one gets its own name
-    states.to_csv(DATA_DIR / "summary_states_runoff_2022_2026.csv", index=False, encoding="utf-8")
-    rt.to_csv(DATA_DIR / "summary_states_rounds_2026.csv", index=False, encoding="utf-8")
-
-    state_shapes = geobr.read_state(year=2020)
     geo = state_shapes.merge(states, left_on="abbrev_state", right_on="uf", how="left")
     if geo["lula_2026"].isna().any() or len(geo) != h["n_states"]:
         raise ValueError("States on the map and in the data do not match.")
-    muni_shapes = geobr.read_municipality(code_muni="all", year=MESH_YEAR)
-    muni_shapes["id"] = muni_shapes["code_muni"].astype(int)
-
     gt = goias_table(d, muni_shapes)
     gh = goias_headline(d, gt)
-    gt.to_csv(DATA_DIR / "summary_goias_rounds_2026.csv", index=False, encoding="utf-8")
     go_geo = muni_shapes[muni_shapes["abbrev_state"] == GO].merge(gt, left_on="id", right_on="ibge_code")
     if len(go_geo) != gh["n"]:
         raise ValueError(f"Goiás: {gh['n']} municipalities with votes, {len(go_geo)} on the map.")
@@ -997,22 +1074,36 @@ def main() -> None:
     chart_national(d, h)
     chart_state_maps(geo, h)
     chart_state_shift(states, h)
-    chart_cards(h)
     chart_br_rounds_maps(state_shapes, rt, rh, d)
     chart_br_rounds_margin(rt, rh)
-    chart_cards_rounds(rh)
     chart_go_rounds_maps(go_geo, gh, d)
     chart_go_caiado(gt, gh)
-    chart_cards_goias(gh)
-    build_municipal_maps(d, muni_shapes)
-    panel_goias(d, go_geo, gh)
-    panel_states(d, state_shapes, rt, rh)
-    panel_runoffs(d, geo, h)
     build_page(d, states, state_shapes, h, rt, rh, gt, gh)
-    write_posts(h, rh, gh)
-    print(f"(c) {h['round_name']} 2022 x 2026 · (b) {plural(rh['n_flipped'], 'estado mudou', 'estados mudaram')} · "
-          f"(a) Goiás: {gh['n']} municípios, {plural(gh['n_flipped'], 'mudou', 'mudaram')}")
-    print(f"Gráficos em {IMG_DIR}, página em {DOCS_DIR / 'index.html'}")
+    if lang == "pt":
+        # summary_states.csv belongs to the frozen first-round page; the runoff one gets its own name
+        states.to_csv(DATA_DIR / "summary_states_runoff_2022_2026.csv", index=False, encoding="utf-8")
+        rt.to_csv(DATA_DIR / "summary_states_rounds_2026.csv", index=False, encoding="utf-8")
+        gt.to_csv(DATA_DIR / "summary_goias_rounds_2026.csv", index=False, encoding="utf-8")
+        chart_cards(h)
+        chart_cards_rounds(rh)
+        chart_cards_goias(gh)
+        build_municipal_maps(d, muni_shapes)
+        panel_goias(d, go_geo, gh)
+        panel_states(d, state_shapes, rt, rh)
+        panel_runoffs(d, geo, h)
+        write_posts(h, rh, gh)
+        print(f"(c) {h['round_name']} 2022 x 2026 · (b) {plural(rh['n_flipped'], 'estado mudou', 'estados mudaram')} · "
+              f"(a) Goiás: {gh['n']} municípios, {plural(gh['n_flipped'], 'mudou', 'mudaram')}")
+    print(f"{lang}: gráficos em {IMG_DIR}, página em {DOCS_DIR / 'index.html'}")
+
+
+def main() -> None:
+    d = load()
+    state_shapes = geobr.read_state(year=2020)
+    muni_shapes = geobr.read_municipality(code_muni="all", year=MESH_YEAR)
+    muni_shapes["id"] = muni_shapes["code_muni"].astype(int)
+    for lang in ("pt", "en"):
+        build(lang, d, state_shapes, muni_shapes)
 
 
 if __name__ == "__main__":
