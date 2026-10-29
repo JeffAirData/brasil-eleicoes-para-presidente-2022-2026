@@ -559,8 +559,10 @@ def chart_state_maps(geo, h: dict) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(12, 6.3))
     draw_state_maps(axes, geo, h)
     leader_legend(fig, 0.075, 11)
+    to_pl = h["flipped_to_pl"]
+    flipped = f"{to_pl} estado virou" if to_pl == 1 else f"{to_pl} estados viraram"
     fig.suptitle(f"Quem liderou em cada estado, {h['round_name']}: "
-                 f"{h['flipped_to_pl']} viraram para Bolsonaro, {h['flipped_to_pt']} para Lula",
+                 f"{flipped} para Bolsonaro, {h['flipped_to_pt']} para Lula",
                  x=0.03, ha="left", fontsize=17, fontweight="bold")
     fig.text(0.03, 0.045, abroad_note(h), color=INK_2, fontsize=10)
     fig.text(0.03, 0.015, SOURCE + " 26 estados e o Distrito Federal.", color=MUTED, fontsize=9)
