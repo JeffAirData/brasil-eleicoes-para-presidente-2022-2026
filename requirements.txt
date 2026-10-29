@@ -1,0 +1,6 @@
+pandas>=2.2.0
+pyarrow>=17.0.0
+geopandas>=1.0.0
+geobr>=0.1.0
+matplotlib>=3.8.0
+pypdf>=4.0.0

@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Como o Brasil votou para presidente: 2022 x 2026</title>
+<meta name="description" content="Eleição para presidente em 2022 e 2026, estado por estado, e o 1º x 2º turno de 2026 no Brasil e em Goiás, com dados abertos do TSE.">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --pl: #2a78d6; --pt: #e34948; --caiado: #d99a1e; --other: #c3c2b7; --flip: #fbf3df;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--page); color: var(--ink); margin: 0; }
+  main { max-width: 920px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.9rem; margin: 0 0 8px; line-height: 1.2; }
+  h2 { font-size: 1.5rem; margin: 0; }
+  h3 { font-size: 1.15rem; margin: 0 0 4px; }
+  p { color: var(--ink-2); line-height: 1.5; margin: 6px 0; }
+  .lead { font-size: 1.15rem; color: var(--ink); }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin: 20px 0; padding: 20px; }
+  .part { margin: 44px 0 0; padding: 0 4px; border: 0; background: none; }
+  .part .num { color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.85rem; }
+  nav ol { margin: 8px 0 0; padding-left: 20px; line-height: 1.7; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  select, input[type="search"] { width: 100%; font: inherit; font-size: 1.1rem; padding: 12px 14px; border: 2px solid var(--pl); border-radius: 8px; background: #fff; color: var(--ink); }
+  dl { margin: 10px 0 0; }
+  dt { font-weight: 600; margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+  dd { margin: 2px 0 0 20px; color: var(--ink-2); line-height: 1.45; }
+  .sub { color: var(--muted); margin: 2px 0 18px; }
+  .cand { margin: 16px 0; }
+  .cand-name { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+  .row { display: grid; grid-template-columns: 64px 1fr 44px; align-items: center; gap: 8px; margin-top: 6px; color: var(--ink-2); }
+  .track { background: #efeee9; border-radius: 4px; height: 18px; overflow: hidden; }
+  .bar { height: 100%; border-radius: 0 4px 4px 0; }
+  .before .bar { opacity: 0.45; }
+  .value { font-weight: 700; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+  ul { margin: 18px 0 0; padding-left: 20px; color: var(--ink); line-height: 1.6; }
+  .map { padding: 16px 8px 8px; }
+  .map h3, .map p, .map .toggle, .map .legend { padding: 0 12px; }
+  .map-box { height: clamp(340px, 95vw, 600px); }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .toggle button { font: inherit; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-2); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--ink-2); margin-top: 6px; min-height: 22px; align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .outline { width: 12px; height: 12px; border: 2px solid var(--ink); border-radius: 3px; display: inline-block; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child, th:nth-child(2), td.left { text-align: left; }
+  th { color: var(--ink-2); font-weight: 600; font-size: 0.9rem; }
+  tbody tr.pick { cursor: pointer; }
+  tbody tr.pick:hover { background: #f1f0eb; }
+  tbody tr.apart td { border-top: 2px solid var(--ink-2); font-style: italic; }
+  tbody tr.flip { background: var(--flip); }
+  button.link { font: inherit; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+  footer { color: var(--muted); font-size: 0.9rem; margin-top: 24px; }
+  a { color: var(--pl); }
+  @media (max-width: 600px) {
+    main { padding: 16px 12px 40px; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.3rem; }
+    .lead { font-size: 1.05rem; }
+    section { padding: 16px 14px; margin: 14px 0; }
+    .map { padding: 14px 4px 4px; }
+    .row { grid-template-columns: 58px 1fr 34px; gap: 6px; }
+    th, td { padding: 7px 8px; font-size: 0.92rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+<h1>Como o Brasil votou para presidente: 2022 x 2026</h1>
+<p class="lead" id="headline"></p>
+
+<section>
+  <h3>Três recortes nesta página</h3>
+  <nav><ol>
+    <li><a href="#parte-1">Brasil, 2º turno: 2022 x 2026, estado por estado</a></li>
+    <li><a href="#parte-2">Brasil, 2026: 1º x 2º turno, estado por estado</a></li>
+    <li><a href="#parte-3">Goiás, 2026: 1º x 2º turno, município por município</a></li>
+  </ol></nav>
+</section>
+
+<section>
+  <h3>Quem é quem</h3>
+  <dl>
+    <dt><span class="dot" style="background:var(--pt)"></span>Lula (Luiz Inácio Lula da Silva)</dt>
+    <dd>PT, esquerda. Presidente de 2003 a 2010 e de novo desde 2023.</dd>
+    <dt><span class="dot" style="background:var(--pl)"></span>Jair Bolsonaro</dt>
+    <dd>PL, direita. Presidente de 2019 a 2022; perdeu o 2º turno de 2022 para Lula.</dd>
+    <dt><span class="dot" style="background:var(--pl)"></span>Flávio Bolsonaro</dt>
+    <dd>PL, direita. Senador pelo Rio de Janeiro e filho mais velho de Jair Bolsonaro; candidato do PL em 2026.</dd>
+    <dt><span class="dot" style="background:var(--caiado)"></span>Ronaldo Caiado</dt>
+    <dd>PSD. Ex-governador de Goiás; candidato a presidente no 1º turno de 2026.</dd>
+  </dl>
+  <p id="context"></p>
+</section>
+
+<!-- ============================== Parte 1 ============================== -->
+<section class="part" id="parte-1">
+  <p class="num">Parte 1</p>
+  <h2>2º turno: 2022 x 2026, estado por estado</h2>
+  <p>Lula contra Jair Bolsonaro em 2022 e contra Flávio Bolsonaro em 2026.</p>
+</section>
+
+<section>
+  <label for="pick">Escolha um estado</label>
+  <select id="pick"></select>
+</section>
+
+<section id="card" aria-live="polite"></section>
+
+<section class="map">
+  <h3>Brasil, estado por estado</h3>
+  <p>Toque em um estado para ver os números e o mapa por município.</p>
+  <div class="toggle" role="group" aria-label="O que o mapa mostra" data-group="c">
+    <button type="button" data-metric="change" aria-pressed="true">Mudança na fatia de Lula</button>
+    <button type="button" data-metric="leader" aria-pressed="false">Quem venceu em 2026</button>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="map-box" id="map-br"></div>
+</section>
+
+<section class="map" id="drill">
+  <h3 id="drill-title"></h3>
+  <p id="drill-note"></p>
+  <div class="map-box" id="map-uf"></div>
+</section>
+
+<section>
+  <h3>Todos os estados, pela mudança na fatia de Lula</h3>
+  <p>Votos válidos, em %. Clique em uma linha para abrir o estado.</p>
+  <div class="scroll"><table id="ranking"></table></div>
+</section>
+
+<section>
+  <h3>Votos no exterior</h3>
+  <p id="abroad-text"></p>
+  <p><button type="button" class="link" id="abroad-open">Ver os números do exterior</button></p>
+</section>
+
+<section>
+  <h3>Por região</h3>
+  <p>As cinco regiões votam de forma muito diferente: o Nordeste é a base de Lula; Sul e Centro-Oeste pendem para a direita.</p>
+  <div class="scroll"><table id="regions"></table></div>
+</section>
+
+<!-- ============================== Parte 2 ============================== -->
+<section class="part" id="parte-2">
+  <p class="num">Parte 2</p>
+  <h2>2026: do 1º para o 2º turno, estado por estado</h2>
+  <p id="rounds-lead"></p>
+</section>
+
+<section class="map">
+  <h3>Quem ficou em primeiro em cada estado</h3>
+  <p id="rounds-flips"></p>
+  <div class="toggle" role="group" aria-label="O que o mapa mostra" data-group="b">
+    <button type="button" data-metric="lead1" aria-pressed="false">1º turno</button>
+    <button type="button" data-metric="lead2" aria-pressed="true">2º turno</button>
+    <button type="button" data-metric="shift" aria-pressed="false">Quem cresceu mais</button>
+  </div>
+  <div class="legend" id="legend-rounds"></div>
+  <div class="map-box" id="map-rounds"></div>
+</section>
+
+<section>
+  <h3>Todos os estados, 1º x 2º turno</h3>
+  <p>Votos válidos, em %. Em destaque, os estados que mudaram de candidato preferido.</p>
+  <div class="scroll"><table id="rounds-table"></table></div>
+</section>
+
+<!-- ============================== Parte 3 ============================== -->
+<section class="part" id="parte-3">
+  <p class="num">Parte 3</p>
+  <h2>Goiás, 2026: do 1º para o 2º turno, município por município</h2>
+  <p id="go-lead"></p>
+</section>
+
+<section class="map">
+  <h3>Os municípios de Goiás</h3>
+  <p id="go-note"></p>
+  <div class="toggle" role="group" aria-label="O que o mapa mostra" data-group="a">
+    <button type="button" data-metric="lead1" aria-pressed="false">1º turno</button>
+    <button type="button" data-metric="lead2" aria-pressed="true">2º turno</button>
+    <button type="button" data-metric="shift" aria-pressed="false">Quem cresceu mais</button>
+  </div>
+  <div class="legend" id="legend-go"></div>
+  <div class="map-box" id="map-go"></div>
+</section>
+
+<section>
+  <label for="go-search">Procure um município de Goiás</label>
+  <input type="search" id="go-search" list="go-names" placeholder="Ex.: Goiânia" autocomplete="off">
+  <datalist id="go-names"></datalist>
+  <div id="go-card" aria-live="polite"></div>
+</section>
+
+<section>
+  <h3>Onde a disputa mais mudou</h3>
+  <p>Os 15 municípios em que a vantagem entre Lula e Flávio mais andou do 1º para o 2º turno. Em destaque, os que mudaram de candidato preferido.</p>
+  <div class="scroll"><table id="go-table"></table></div>
+</section>
+
+<footer>
+  <p>Os números contam só votos válidos (sem brancos e nulos) e incluem os brasileiros que votam no exterior no total
+  nacional. Mostram onde o voto mudou, não quais eleitores mudaram de ideia.</p>
+  <p>Fonte: TSE (Tribunal Superior Eleitoral), dados abertos. Mapas: IBGE.
+  <a href="__CODE_URL__">Código e dados no GitHub</a>.</p>
+</footer>
+</main>
+
+<script>
+const DATA = __DATA__;
+const STATES_GEO = __STATES_GEO__;
+const DEFAULT_STATE = "SP";
+const ABROAD = "ZZ";
+
+const css = getComputedStyle(document.documentElement);
+const color = (v) => css.getPropertyValue(v).trim();
+const PT = color("--pt"), PL = color("--pl"), SURFACE = color("--surface"), INK = color("--ink");
+const KEY_COLOR = { PT, PL, CAIADO: color("--caiado"), OUTRO: color("--other") };
+const byUf = new Map(DATA.states.map((s) => [s.uf, s]));
+const n0 = (v) => Math.round(v).toLocaleString("pt-BR");
+const f1 = (v) => v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const points = (v) => `${f1(Math.abs(v))} ${f1(Math.abs(v)) === "1,0" ? "ponto" : "pontos"}`;
+const moved = (v) => (v >= 0 ? "subiu" : "caiu");
+const signed = (v) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${f1(Math.abs(v))}`;
+const plNames = `${DATA.pl_name[2022].split(" ")[0]} Bolsonaro em 2022, ${DATA.pl_name[2026].split(" ")[0]} em 2026`;
+let metric = "change";
+let current = null;
+
+function candidate(name, c, before, after, labels = [2022, 2026]) {
+  const row = (label, value, cls) => `<div class="row ${cls}"><span>${label}</span>
+      <div class="track"><div class="bar" style="width:${value}%;background:${c}"></div></div>
+      <span class="value">${n0(value)}</span></div>`;
+  return `<div class="cand"><div class="cand-name"><span class="dot" style="background:${c}"></span>${name}</div>
+          ${row(labels[0], before, "before")}${row(labels[1], after, "after")}</div>`;
+}
+
+function lead(s) {
+  const who = { PT: "Lula", PL: "Bolsonaro" };
+  if (s.lead22 === s.lead26) return `${who[s.lead22]} venceu nas duas eleições`;
+  return `virou de ${who[s.lead22]} para ${who[s.lead26]}`;
+}
+
+function showCard(s) {
+  const dLula = s.lula26 - s.lula22, dPl = s.pl26 - s.pl22, nat = DATA.national;
+  const others = s.rounds.filter((r) => r.round !== DATA.round)
+    .map((r) => `${r.year}, ${r.round}: Lula ${f1(r.lula)}, ${DATA.pl_name[r.year]} ${f1(r.pl)}`).join("; ");
+  document.getElementById("card").innerHTML = `
+    <h2>${s.name}</h2>
+    <p class="sub">${s.uf === ABROAD ? "Votos nos consulados brasileiros pelo mundo" : s.region} · ${n0(s.registered)} eleitores aptos · ${lead(s)}</p>
+    <p><strong>De cada 100 votos válidos no ${DATA.round}:</strong></p>
+    ${candidate("Lula (PT)", PT, s.lula22, s.lula26)}
+    ${candidate(`PL (${plNames})`, PL, s.pl22, s.pl26)}
+    <ul>
+      <li>A fatia de Lula ${moved(dLula)} ${points(dLula)} aqui. No país, ${moved(nat.lula_change)} ${points(nat.lula_change)}.</li>
+      <li>A fatia do PL ${moved(dPl)} ${points(dPl)}. No país, ${moved(nat.pl_change)} ${points(nat.pl_change)}.</li>
+      <li>${n0(s.abst26)} de cada 100 eleitores aptos não votaram (${n0(s.abst22)} em 2022). O voto é obrigatório para a maioria dos adultos.</li>
+      ${others ? `<li>Para comparar, em % dos votos válidos: ${others}.</li>` : ""}
+    </ul>`;
+}
+
+const LAYOUT = (lon, lat) => ({
+  margin: { r: 0, l: 0, t: 0, b: 0 }, paper_bgcolor: SURFACE, font: { family: "Segoe UI, system-ui, sans-serif" },
+  separators: ",.", showlegend: false,
+  geo: { visible: false, bgcolor: SURFACE, projection: { type: "mercator" }, lonaxis: { range: lon },
+         lataxis: { range: lat }, domain: { x: [0, 1], y: [0.12, 1] } },
+});
+const CONFIG = { displayModeBar: false, responsive: true, scrollZoom: false };
+const BRAZIL_VIEW = [[-74.5, -34], [-34.2, 5.8]];
+
+// Municipalities created after 2022 have no earlier result: drawn in gray on the "change" map
+function newPlaces(geojson, key, rows) {
+  const fresh = rows.filter((r) => r.lula22 === null && r.lula26 !== null);
+  return {
+    type: "choropleth", geojson, featureidkey: `properties.${key}`, locations: fresh.map((r) => r.id),
+    z: fresh.map(() => 0), zmin: 0, zmax: 1, colorscale: [[0, "#c3c2b7"], [1, "#c3c2b7"]], showscale: false,
+    text: fresh.map((r) => r.name), customdata: fresh.map((r) => [r.lula26]),
+    marker: { line: { color: "white", width: 0.5 } },
+    hovertemplate: "<b>%{text}</b><br>Criado depois de 2022: sem resultado anterior<br>Lula em 2026: %{customdata[0]:.1f}%<extra></extra>",
+  };
+}
+
+function traces(geojson, key, rows) {
+  return metric === "leader" ? [trace(geojson, key, rows)] : [trace(geojson, key, rows), newPlaces(geojson, key, rows)];
+}
+
+function trace(geojson, key, rows) {
+  const base = {
+    type: "choropleth", geojson, featureidkey: `properties.${key}`, locations: rows.map((r) => r.id),
+    text: rows.map((r) => r.name), marker: { line: { color: "white", width: 0.5 } },
+  };
+  if (metric === "leader") {
+    return { ...base, z: rows.map((r) => (r.lula26 === null || r.pl26 === null ? null : r.pl26 > r.lula26 ? 1 : 0)),
+             zmin: 0, zmax: 1, colorscale: [[0, PT], [1, PL]], showscale: false,
+             customdata: rows.map((r) => [r.lula26, r.pl26]),
+             hovertemplate: "<b>%{text}</b><br>Lula %{customdata[0]:.1f}%<br>Bolsonaro %{customdata[1]:.1f}%<extra></extra>" };
+  }
+  return { ...diverging(rows.map((r) => (r.lula22 === null || r.lula26 === null ? null : r.lula26 - r.lula22)),
+                        "Fatia de Lula, mudança em pontos"),
+           ...base, customdata: rows.map((r) => [r.lula22, r.lula26]),
+           hovertemplate: "<b>%{text}</b><br>Lula: %{customdata[0]:.1f}% → %{customdata[1]:.1f}%<br>Mudança: %{z:+.1f} pontos<extra></extra>" };
+}
+
+// Blue (toward Bolsonaro) to red (toward Lula), symmetric around zero
+function diverging(z, title) {
+  const span = Math.max(1, ...z.filter((v) => v !== null).map(Math.abs));
+  return { z, zmin: -span, zmax: span, colorscale: [[0, PL], [0.5, "#f0efec"], [1, PT]],
+           colorbar: { orientation: "h", y: 0, yanchor: "bottom", len: 0.7, thickness: 12, title: { text: title, side: "top" } } };
+}
+
+// One trace per leading candidate; places that changed leader get a dark outline
+function leaderTraces(geojson, key, rows, field, hover) {
+  const groups = new Map();
+  for (const r of rows) {
+    const k = r[`key${field}`];
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  return [...groups].map(([k, g]) => ({
+    type: "choropleth", geojson, featureidkey: `properties.${key}`, locations: g.map((r) => r.id),
+    z: g.map(() => 0), zmin: 0, zmax: 1, colorscale: [[0, KEY_COLOR[k]], [1, KEY_COLOR[k]]], showscale: false,
+    text: g.map((r) => r.name), customdata: g.map(hover),
+    marker: { line: { color: g.map((r) => (field === 2 && r.flipped ? INK : "white")),
+                      width: g.map((r) => (field === 2 && r.flipped ? 2 : 0.5)) } },
+    hovertemplate: "<b>%{text}</b><br>%{customdata}<extra></extra>",
+  }));
+}
+
+function leaderLegend(rows, field, flipped) {
+  const seen = new Map(rows.map((r) => [r[`key${field}`], r[`lead${field}`]]));
+  return [...seen].map(([k, name]) => `<span><i class="dot" style="background:${KEY_COLOR[k]}"></i>${name} à frente</span>`).join("")
+    + (field === 2 && flipped ? `<span><i class="outline"></i>mudou de líder</span>` : "");
+}
+
+const shiftLegend = `<span><i class="dot" style="background:${PT}"></i>Lula cresceu mais</span><span><i class="dot" style="background:${PL}"></i>Flávio cresceu mais</span>`;
+
+function drawLegend() {
+  document.getElementById("legend").innerHTML = metric === "leader"
+    ? `<span><i class="dot" style="background:${PT}"></i>Lula (PT) à frente</span><span><i class="dot" style="background:${PL}"></i>Bolsonaro (PL) à frente</span>`
+    : `<span><i class="dot" style="background:${PT}"></i>Lula ganhou espaço</span><span><i class="dot" style="background:${PL}"></i>Lula perdeu espaço</span>`;
+}
+
+function drawBrazil() {
+  const rows = DATA.states.filter((s) => s.uf !== ABROAD).map((s) => ({ ...s, id: s.uf }));
+  Plotly.react("map-br", [trace(STATES_GEO, "uf", rows)], LAYOUT(...BRAZIL_VIEW), CONFIG);
+}
+
+const geoCache = new Map();
+async function loadGeo(uf) {
+  if (!geoCache.has(uf)) geoCache.set(uf, await (await fetch(`geo/${uf}.json`)).json());
+  return geoCache.get(uf);
+}
+const viewOf = (geo) => {
+  const [minx, miny, maxx, maxy] = geo.bounds, pad = Math.max(maxx - minx, maxy - miny) * 0.04;
+  return [[minx - pad, maxx + pad], [miny - pad, maxy + pad]];
+};
+
+async function drawState(s) {
+  const title = document.getElementById("drill-title"), note = document.getElementById("drill-note");
+  if (s.uf === ABROAD) {
+    title.textContent = "Votos no exterior";
+    note.textContent = "Votos nos consulados brasileiros pelo mundo. Entram no total nacional, mas não pertencem a nenhum estado, por isso não há mapa.";
+    Plotly.purge("map-uf");
+    document.getElementById("map-uf").hidden = true;
+    return;
+  }
+  document.getElementById("map-uf").hidden = false;
+  title.textContent = `${s.name}, município por município`;
+  note.textContent = "Carregando o mapa…";
+  try {
+    const geo = await loadGeo(s.uf);
+    if (current !== s) return;
+    const rows = geo.geojson.features.map((f) => ({
+      id: f.properties.id, name: f.properties.name, lula22: f.properties.lula_2022, lula26: f.properties.lula_2026,
+      pl26: f.properties.pl_2026,
+    }));
+    Plotly.react("map-uf", traces(geo.geojson, "id", rows), LAYOUT(...viewOf(geo)), CONFIG);
+    const fresh = rows.filter((r) => r.lula22 === null && r.lula26 !== null).map((r) => r.name);
+    note.textContent = `${rows.length} municípios, ${DATA.round}. Passe o mouse ou toque para ver os números.` +
+      (fresh.length ? ` Em cinza no mapa de mudança: ${fresh.join(", ")}, criado depois de 2022.` : "");
+  } catch (err) {
+    note.textContent = "Não foi possível carregar o mapa deste estado.";
+  }
+}
+
+function select(uf, scroll, keepHash = false) {
+  const s = byUf.get(uf);
+  if (!s) return;
+  current = s;
+  pick.value = uf;
+  showCard(s);
+  drawState(s);
+  if (!keepHash) history.replaceState(null, "", `#${uf}`);
+  if (scroll) document.getElementById("card").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function table(id, head, rows) {
+  document.getElementById(id).innerHTML =
+    `<thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody>`;
+}
+const delta = (v) => `<td><strong>${signed(v)}</strong></td>`;
+
+// ------------------------------------------------------------------ Parte 1
+const pick = document.getElementById("pick");
+pick.innerHTML = DATA.states.slice().sort((a, b) => (a.uf === ABROAD) - (b.uf === ABROAD) || a.name.localeCompare(b.name, "pt-BR"))
+  .map((s) => `<option value="${s.uf}">${s.name}</option>`).join("");
+pick.addEventListener("change", () => select(pick.value, false));
+
+const nat = DATA.national, c = DATA.counts;
+document.getElementById("headline").textContent =
+  `No ${DATA.round}, Lula teve ${n0(nat.lula_2022)} de cada 100 votos válidos em 2022 e ${n0(nat.lula_2026)} em 2026. ` +
+  `O partido da família Bolsonaro foi de ${n0(nat.pl_2022)} para ${n0(nat.pl_2026)}. ` +
+  `Lula venceu em ${c.lula_states_2022} de ${c.n_states} estados em 2022 e em ${c.lula_states_2026} em 2026.`;
+document.getElementById("context").textContent = "No país, em % dos votos válidos: " +
+  DATA.context.map((r) => `${r.year}, ${r.round}: Lula ${f1(r.lula)}, ${r.pl_name} ${f1(r.pl)}`).join("; ") + ".";
+
+table("ranking", ["Estado", "Região", "Lula 2022", "Lula 2026", "Mudança", "PL 2022", "PL 2026", "Mudança"],
+  // the 27 states ranked; votes abroad always last, as a separate line
+  DATA.states.slice().sort((a, b) => (a.uf === ABROAD) - (b.uf === ABROAD) || (a.lula26 - a.lula22) - (b.lula26 - b.lula22)).map((s) =>
+    `<tr class="pick${s.uf === ABROAD ? " apart" : ""}" data-uf="${s.uf}"><td>${s.name}</td><td class="left">${s.uf === ABROAD ? "Não é estado" : s.region}</td><td>${f1(s.lula22)}</td>
+     <td>${f1(s.lula26)}</td>${delta(s.lula26 - s.lula22)}<td>${f1(s.pl22)}</td><td>${f1(s.pl26)}</td>${delta(s.pl26 - s.pl22)}</tr>`));
+document.getElementById("ranking").addEventListener("click", (ev) => {
+  const tr = ev.target.closest("tr[data-uf]");
+  if (tr) select(tr.dataset.uf, true);
+});
+const ab = DATA.abroad;
+document.getElementById("abroad-text").textContent =
+  `Brasileiros que moram fora votam para presidente nos consulados. No ${DATA.round} de 2026, foram ` +
+  `${n0(ab.votes)} votos válidos, ${f1(ab.pct_of_total)}% do total nacional. ` +
+  `Eles entram em todos os números nacionais desta página, mas não pertencem a nenhum estado nem aparecem nos mapas, ` +
+  `por isso ficam sempre numa linha à parte. Lula: ${f1(ab.lula_2022)}% em 2022, ${f1(ab.lula_2026)}% em 2026. ` +
+  `PL: ${f1(ab.pl_2022)}% em 2022, ${f1(ab.pl_2026)}% em 2026.`;
+document.getElementById("abroad-open").addEventListener("click", () => select(ABROAD, true));
+
+table("regions", ["Região", "Lula 2022", "Lula 2026", "Mudança", "PL 2022", "PL 2026", "Mudança"],
+  DATA.regions.map((r) => `<tr><td>${r.name}</td><td>${f1(r.lula_2022)}</td><td>${f1(r.lula_2026)}</td>
+    ${delta(r.lula_2026 - r.lula_2022)}<td>${f1(r.pl_2022)}</td><td>${f1(r.pl_2026)}</td>${delta(r.pl_2026 - r.pl_2022)}</tr>`));
+
+// ------------------------------------------------------------------ Parte 2
+const R = DATA.rounds;
+let roundsMetric = "lead2";
+document.getElementById("rounds-lead").textContent =
+  `No 1º turno, Lula teve ${f1(R.lula_1t)}% dos votos válidos e Flávio Bolsonaro, ${f1(R.pl_1t)}%; os demais candidatos somaram ${f1(R.others_1t)}%. ` +
+  `No 2º turno, Lula ficou com ${f1(R.lula_2t)}% e Flávio com ${f1(R.pl_2t)}%. ` + R.gains_text;
+document.getElementById("rounds-flips").textContent = R.flips_text;
+
+function drawRounds() {
+  const rows = R.states.filter((s) => s.uf !== ABROAD).map((s) => ({ ...s, id: s.uf }));
+  let data;
+  if (roundsMetric === "shift") {
+    data = [{ type: "choropleth", geojson: STATES_GEO, featureidkey: "properties.uf", locations: rows.map((r) => r.id),
+              text: rows.map((r) => r.name), marker: { line: { color: "white", width: 0.5 } },
+              ...diverging(rows.map((r) => (r.lula2 - r.pl2) - (r.lula1 - r.pl1)), "Mudança na vantagem de Lula, em pontos"),
+              customdata: rows.map((r) => [r.lula1, r.lula2, r.pl1, r.pl2]),
+              hovertemplate: "<b>%{text}</b><br>Lula: %{customdata[0]:.1f}% → %{customdata[1]:.1f}%<br>Flávio: %{customdata[2]:.1f}% → %{customdata[3]:.1f}%<extra></extra>" }];
+    document.getElementById("legend-rounds").innerHTML = shiftLegend;
+  } else {
+    const field = roundsMetric === "lead1" ? 1 : 2;
+    data = leaderTraces(STATES_GEO, "uf", rows, field, (r) =>
+      field === 1 ? `1º turno: Lula ${f1(r.lula1)}%, Flávio ${f1(r.pl1)}%` : `2º turno: Lula ${f1(r.lula2)}%, Flávio ${f1(r.pl2)}%`);
+    document.getElementById("legend-rounds").innerHTML = leaderLegend(rows, field, R.n_flipped > 0);
+  }
+  Plotly.react("map-rounds", data, LAYOUT(...BRAZIL_VIEW), CONFIG);
+}
+
+table("rounds-table", ["Estado", "Região", "Líder 1º", "Líder 2º", "Lula 1º", "Lula 2º", "Flávio 1º", "Flávio 2º"],
+  R.states.slice().sort((a, b) => (a.uf === ABROAD) - (b.uf === ABROAD) || b.flipped - a.flipped || a.name.localeCompare(b.name, "pt-BR")).map((s) =>
+    `<tr class="${s.flipped ? "flip" : ""}${s.uf === ABROAD ? " apart" : ""}"><td>${s.name}</td><td class="left">${s.uf === ABROAD ? "Não é estado" : s.region}</td>
+     <td class="left">${s.lead1}</td><td class="left">${s.lead2}</td><td>${f1(s.lula1)}</td><td>${f1(s.lula2)}</td><td>${f1(s.pl1)}</td><td>${f1(s.pl2)}</td></tr>`));
+
+// ------------------------------------------------------------------ Parte 3
+const G = DATA.goias;
+const goByName = new Map(G.rows.map((r) => [r.name, r]));
+let goMetric = "lead2";
+const others1t = G.other_led_1t.length
+  ? ` No 1º turno, ${G.other_led_1t.length === 1 ? "um município teve" : `${G.other_led_1t.length} municípios tiveram`} outro candidato à frente: ` +
+    G.other_led_1t.map((o) => `${o.name} (${o.leader})`).join(", ") + "."
+  : "";
+document.getElementById("go-lead").textContent =
+  `Em Goiás, Lula foi de ${f1(G.lula_1t)}% no 1º turno para ${f1(G.lula_2t)}% no 2º; Flávio, de ${f1(G.pl_1t)}% para ${f1(G.pl_2t)}%. ` +
+  `Ronaldo Caiado, ex-governador do estado, teve ${f1(G.caiado_1t)}% no 1º turno. ` +
+  `Lula ficou à frente em ${G.lula_led_1t} dos ${G.n} municípios no 1º turno e em ${G.lula_led_2t} no 2º. ` +
+  G.grew_text + others1t;
+document.getElementById("go-note").textContent =
+  `${G.n_flipped === 1 ? "1 município mudou" : `${G.n_flipped} municípios mudaram`} de candidato preferido entre os turnos. ` +
+  `${G.corr_text} (correlação de ${G.corr.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} entre as duas medidas, município a município). ` +
+  G.biggest_text;
+
+async function drawGoias() {
+  const geo = await loadGeo("GO");
+  let data;
+  if (goMetric === "shift") {
+    data = [{ type: "choropleth", geojson: geo.geojson, featureidkey: "properties.id", locations: G.rows.map((r) => r.id),
+              text: G.rows.map((r) => r.name), marker: { line: { color: "white", width: 0.4 } },
+              ...diverging(G.rows.map((r) => r.shift), "Mudança na vantagem de Lula, em pontos"),
+              customdata: G.rows.map((r) => [r.lula1, r.lula2, r.pl1, r.pl2, r.caiado1]),
+              hovertemplate: "<b>%{text}</b><br>Lula: %{customdata[0]:.1f}% → %{customdata[1]:.1f}%<br>Flávio: %{customdata[2]:.1f}% → %{customdata[3]:.1f}%<br>Caiado no 1º turno: %{customdata[4]:.1f}%<extra></extra>" }];
+    document.getElementById("legend-go").innerHTML = shiftLegend;
+  } else {
+    const field = goMetric === "lead1" ? 1 : 2;
+    data = leaderTraces(geo.geojson, "id", G.rows, field, (r) =>
+      field === 1 ? `1º turno: Lula ${f1(r.lula1)}%, Flávio ${f1(r.pl1)}%, Caiado ${f1(r.caiado1)}%`
+                  : `2º turno: Lula ${f1(r.lula2)}%, Flávio ${f1(r.pl2)}%`);
+    document.getElementById("legend-go").innerHTML = leaderLegend(G.rows, field, G.n_flipped > 0);
+  }
+  Plotly.react("map-go", data, LAYOUT(...viewOf(geo)), CONFIG);
+}
+
+function showGoCard(r) {
+  document.getElementById("go-card").innerHTML = !r ? "" : `
+    <h2 style="margin-top:18px">${r.name}</h2>
+    <p class="sub">1º turno: ${r.lead1} à frente · 2º turno: ${r.lead2} à frente${r.flipped ? " · mudou de candidato preferido" : ""}</p>
+    <p><strong>De cada 100 votos válidos:</strong></p>
+    ${candidate("Lula (PT)", PT, r.lula1, r.lula2, ["1º turno", "2º turno"])}
+    ${candidate("Flávio Bolsonaro (PL)", PL, r.pl1, r.pl2, ["1º turno", "2º turno"])}
+    <ul>
+      <li>Ronaldo Caiado teve ${f1(r.caiado1)}% dos votos válidos aqui no 1º turno.</li>
+      <li>A vantagem de Lula sobre Flávio mudou ${signed(r.shift)} pontos entre os turnos.</li>
+      <li>${n0(r.abst1)} de cada 100 eleitores aptos não votaram no 1º turno; ${n0(r.abst2)} no 2º.</li>
+    </ul>`;
+}
+document.getElementById("go-names").innerHTML = G.rows.map((r) => r.name).sort((a, b) => a.localeCompare(b, "pt-BR"))
+  .map((n) => `<option value="${n}">`).join("");
+document.getElementById("go-search").addEventListener("input", (ev) => {
+  const r = goByName.get(ev.target.value);
+  if (r) showGoCard(r);
+});
+showGoCard(goByName.get("Goiânia"));
+
+table("go-table", ["Município", "Líder 1º", "Líder 2º", "Lula 1º", "Lula 2º", "Flávio 1º", "Flávio 2º", "Caiado 1º", "Mudança"],
+  G.rows.slice().sort((a, b) => Math.abs(b.shift) - Math.abs(a.shift)).slice(0, 15).map((r) =>
+    `<tr class="${r.flipped ? "flip" : ""}"><td>${r.name}</td><td class="left">${r.lead1}</td><td class="left">${r.lead2}</td>
+     <td>${f1(r.lula1)}</td><td>${f1(r.lula2)}</td><td>${f1(r.pl1)}</td><td>${f1(r.pl2)}</td><td>${f1(r.caiado1)}</td>${delta(r.shift)}</tr>`));
+
+// ------------------------------------------------------------------ toggles
+const redraw = {
+  c: (m) => { metric = m; drawLegend(); drawBrazil(); if (current) drawState(current); },
+  b: (m) => { roundsMetric = m; drawRounds(); },
+  a: (m) => { goMetric = m; drawGoias(); },
+};
+for (const group of document.querySelectorAll(".toggle[data-group]")) {
+  for (const button of group.querySelectorAll("button")) {
+    button.addEventListener("click", () => {
+      group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b === button));
+      redraw[group.dataset.group](button.dataset.metric);
+    });
+  }
+}
+
+drawLegend();
+drawBrazil();
+drawRounds();
+drawGoias();
+document.getElementById("map-br").on("plotly_click", (ev) => select(ev.points[0].location, true));
+// a #UF in the address opens that state; any other anchor (#parte-2, #parte-3) is left alone
+select(byUf.has(location.hash.slice(1)) ? location.hash.slice(1) : DEFAULT_STATE, false, !byUf.has(location.hash.slice(1)));
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Virtual environment
+.venv/
+venv/
+
+# Raw TSE downloads (about 1 GB): fetched by src/download_tse.py
+Data/raw/
+
+*.zip
+
+# Local notes, not part of the public project
+notas/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Editor and OS files
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
